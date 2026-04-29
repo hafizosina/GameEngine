@@ -7,6 +7,14 @@
 │  ├── settings.json
 │  ├── settings_test.json
 │  └── ui_theme.json
+├── docs
+│  ├── GameEngine.md
+│  ├── GameEngineDevelopment.md
+│  ├── GameEngineRules.md
+│  ├── Phase0.md
+│  ├── Phase1.md
+│  ├── ProjectState.md
+│  └── structure.txt
 ├── engine
 │  ├── assets
 │  │  ├── AssetEntry.hpp
@@ -130,13 +138,7 @@
 │     ├── Serializer.hpp
 │     └── UUID.hpp
 ├── GameEngine.code-workspace
-├── GameEngine.md
-├── GameEngineDevelopment.md
-├── Phase0.md
-├── Phase1.md
-├── ProjectState.md
 ├── SConstruct
 ├── setup_vendor.sh
-├── src
-│  └── main.cpp
-└── structure.txt
+└── src
+   └── main.cpp
