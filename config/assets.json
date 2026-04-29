@@ -1,3 +1,52 @@
 {
-    "assets": []
+  "assets": [
+    {
+      "id":          "tex.player.idle",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/player/idle.png",
+      "placeholder": "assets/placeholder/player_idle.png"
+    },
+    {
+      "id":          "tex.ui.button.normal",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/ui/button_normal.png",
+      "placeholder": "assets/placeholder/ui_button_normal.png"
+    },
+    {
+      "id":          "tex.ui.button.hover",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/ui/button_hover.png",
+      "placeholder": "assets/placeholder/ui_button_hover.png"
+    },
+    {
+      "id":          "tex.missing",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/missing.png",
+      "placeholder": "assets/placeholder/missing.png"
+    },
+    {
+      "id":          "font.main",
+      "type":        "FONT",
+      "real":        "assets/fonts/main.ttf",
+      "placeholder": ""
+    },
+    {
+      "id":          "sfx.jump",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/jump.wav",
+      "placeholder": "assets/placeholder/sfx_jump.wav"
+    },
+    {
+      "id":          "sfx.click",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/click.wav",
+      "placeholder": "assets/placeholder/sfx_click.wav"
+    },
+    {
+      "id":          "bgm.menu",
+      "type":        "MUSIC",
+      "real":        "assets/sounds/bgm/menu.ogg",
+      "placeholder": ""
+    }
+  ]
 }

@@ -38,7 +38,13 @@ if env['PLATFORM'] == 'posix' or env['PLATFORM'] == 'darwin':
 env.VariantDir('build/engine', 'engine', duplicate=0)
 env.VariantDir('build/src',    'src',    duplicate=0)
 
-engine_src = Glob('build/engine/core/*.cpp') + Glob('build/engine/utils/*.cpp')
+engine_src = (
+    Glob('build/engine/core/*.cpp') + 
+    Glob('build/engine/utils/*.cpp') +
+    Glob('build/engine/async/*.cpp') +
+    Glob('build/engine/resources/*.cpp') +
+    Glob('build/engine/assets/*.cpp')
+)
 game_src   = Glob('build/src/*.cpp')
 
 # Build the engine as a static library in build/

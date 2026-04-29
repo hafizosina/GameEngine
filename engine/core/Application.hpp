@@ -4,6 +4,11 @@
 #include "EngineConfig.hpp"
 #include "data/DataManager.hpp"
 
+// Phase 2
+#include "assets/AssetTracker.hpp"
+#include "async/AsyncManager.hpp"
+#include "resources/ResourceManager.hpp"
+
 namespace Zhenzhu {
 
 class Application {
@@ -24,6 +29,11 @@ private:
     Timer         m_Timer;
     EngineConfig  m_Config;
     DataManager   m_Data;
+
+    // Phase 2
+    AssetTracker    m_AssetTracker;
+    AsyncManager    m_Async;
+    ResourceManager m_Resources;
 
     static inline bool s_Running = false;
 };

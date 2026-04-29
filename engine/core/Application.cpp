@@ -7,7 +7,7 @@ namespace Zhenzhu {
 
 void Application::Init() {
     Logger::Init("engine.log");
-    LOG_INFO("=== Zhenzhu Engine v0.1.0 ===");
+    LOG_INFO("=== Zhenzhu Engine ===");
 
     // ── Phase 1: Data first ──────────────────────────
     m_Data.Init();
@@ -23,10 +23,20 @@ void Application::Init() {
 
     m_Window.Create(m_Config);
 
+    // ── Phase 2 — Boot order matters ─────────────────
+    m_Async.Init();
+    m_AssetTracker.Init(&m_Data.assets);
+    m_AssetTracker.Report();
+
+    m_Resources.Init(&m_AssetTracker, &m_Async);
+
     // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
     ServiceLocator::Register(&m_Timer);
     ServiceLocator::Register(&m_Data);
+    ServiceLocator::Register(&m_Async);
+    ServiceLocator::Register(&m_AssetTracker);
+    ServiceLocator::Register(&m_Resources);
 
     s_Running = true;
     LOG_INFO("Application initialized ✓");
@@ -38,6 +48,9 @@ void Application::Run() {
     while (s_Running && !m_Window.ShouldClose()) {
         m_Timer.Tick();
         float dt = m_Timer.GetDeltaTime();
+
+        // Phase 2 — flush async callbacks every frame
+        m_Async.Flush();
 
         ProcessInput();
 
@@ -55,6 +68,8 @@ void Application::Run() {
 
 void Application::Shutdown() {
     LOG_INFO("Shutting down...");
+    m_Resources.Clear();
+    m_Async.Shutdown();
     ServiceLocator::Clear();
     m_Window.Close();
     Logger::Shutdown();
@@ -88,7 +103,7 @@ void Application::Render() {
         if (m_Data.settings.gameplay.showFPS) {
             DrawFPS(10, 10);
         }
-        DrawText("Zhenzhu Engine — Phase 1", 10, 40, 20, GRAY);
+        DrawText("Zhenzhu Engine — Phase 2", 10, 40, 20, GRAY);
 #endif
 
     EndDrawing();
