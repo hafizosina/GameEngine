@@ -1084,39 +1084,39 @@ TEST 7 — ThemeDB color parse:
 
 ```
 CONFIG FILES:
-  □ config/settings.json
-  □ config/keybinds.json
-  □ config/ui_theme.json
-  □ config/game_config.json
-  □ config/assets.json       (empty array)
-  □ config/scenes.json       (empty array)
+  [x] config/settings.json
+  [x] config/keybinds.json
+  [x] config/ui_theme.json
+  [x] config/game_config.json
+  [x] config/assets.json       (empty array)
+  [x] config/scenes.json       (empty array)
 
 UTILS:
-  □ Serializer.hpp   (LoadFile, SaveFile, GetString/Int/Float/Bool/Color)
-  □ EventBus.hpp     (Subscribe, Publish, Clear)
-  □ Math2D.hpp       (Vec2, Lerp, LerpV, Clamp, Distance, Random)
-  □ UUID.hpp         (Generate)
+  [x] Serializer.hpp   (LoadFile, SaveFile, GetString/Int/Float/Bool/Color)
+  [x] EventBus.hpp     (Subscribe, Publish, Clear)
+  [x] Math2D.hpp       (Vec2, Lerp, LerpV, Clamp, Distance, Random)
+  [x] UUID.hpp         (Generate)
 
 DATA LAYER:
-  □ SettingsDB.hpp   (Init, Save, nested structs)
-  □ KeybindDB.hpp    (Init, GetKeyboard, GetGamepad, Remap, Save)
-  □ ThemeDB.hpp      (Init, all color/typography/shape/anim values)
-  □ GameConfigDB.hpp (Init, GetFloat, GetInt, GetBool, GetString)
-  □ AssetDB.hpp      (stub Init)
-  □ SceneDB.hpp      (stub Init)
-  □ DataManager.hpp  (Init, Reload, owns all DBs)
+  [x] SettingsDB.hpp   (Init, Save, nested structs)
+  [x] KeybindDB.hpp    (Init, GetKeyboard, GetGamepad, Remap, Save)
+  [x] ThemeDB.hpp      (Init, all color/typography/shape/anim values)
+  [x] GameConfigDB.hpp (Init, GetFloat, GetInt, GetBool, GetString)
+  [x] AssetDB.hpp      (stub Init)
+  [x] SceneDB.hpp      (stub Init)
+  [x] DataManager.hpp  (Init, Reload, owns all DBs)
 
 WIRED:
-  □ Application::Init() calls DataManager::Init() first
-  □ Window reads width/height/title/fps from SettingsDB
-  □ ServiceLocator has DataManager registered
-  □ showFPS reads from gameplay.showFPS in settings.json
+  [x] Application::Init() calls DataManager::Init() first
+  [x] Window reads width/height/title/fps from SettingsDB
+  [x] ServiceLocator has DataManager registered
+  [x] showFPS reads from gameplay.showFPS in settings.json
 
 VALIDATED:
-  □ All 7 tests pass
-  □ Config change in JSON → behavior changes without recompile
-  □ No crash on missing keys (fallback + warn)
-  □ Settings save writes back to disk correctly
+  [x] All 7 tests pass
+  [x] Config change in JSON → behavior changes without recompile
+  [x] No crash on missing keys (fallback + warn)
+  [x] Settings save writes back to disk correctly
 ```
 
 ---

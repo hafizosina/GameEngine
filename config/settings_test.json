@@ -1,0 +1,21 @@
+{
+    "audio": {
+        "masterVolume": 1.0,
+        "musicVolume": 0.6000000238418579,
+        "muted": false,
+        "sfxVolume": 0.800000011920929
+    },
+    "display": {
+        "fullscreen": false,
+        "height": 720,
+        "targetFPS": 60,
+        "title": "Zhenzhu Engine - Tested",
+        "vsync": true,
+        "width": 1280
+    },
+    "gameplay": {
+        "difficulty": "hardcode_test",
+        "language": "en",
+        "showFPS": true
+    }
+}

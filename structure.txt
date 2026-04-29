@@ -5,6 +5,7 @@
 │  ├── keybinds.json
 │  ├── scenes.json
 │  ├── settings.json
+│  ├── settings_test.json
 │  └── ui_theme.json
 ├── engine
 │  ├── assets
@@ -128,7 +129,6 @@
 │     ├── Math2D.hpp
 │     ├── Serializer.hpp
 │     └── UUID.hpp
-├── filename.txt
 ├── GameEngine.code-workspace
 ├── GameEngine.md
 ├── GameEngineDevelopment.md
