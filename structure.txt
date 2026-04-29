@@ -1,0 +1,142 @@
+.
+├── config
+│  ├── assets.json
+│  ├── game_config.json
+│  ├── keybinds.json
+│  ├── scenes.json
+│  ├── settings.json
+│  └── ui_theme.json
+├── engine
+│  ├── assets
+│  │  ├── AssetEntry.hpp
+│  │  └── AssetTracker.hpp
+│  ├── async
+│  │  ├── AsyncHandle.hpp
+│  │  ├── AsyncJob.hpp
+│  │  ├── AsyncManager.hpp
+│  │  ├── MainThreadDispatcher.hpp
+│  │  └── ThreadPool.hpp
+│  ├── audio
+│  │  ├── AudioBus.hpp
+│  │  ├── AudioManager.hpp
+│  │  ├── MusicPlayer.hpp
+│  │  └── SoundPlayer.hpp
+│  ├── core
+│  │  ├── Application.cpp
+│  │  ├── Application.hpp
+│  │  ├── EngineConfig.hpp
+│  │  ├── ServiceLocator.hpp
+│  │  ├── Timer.cpp
+│  │  ├── Timer.hpp
+│  │  ├── Window.cpp
+│  │  └── Window.hpp
+│  ├── data
+│  │  ├── AssetDB.hpp
+│  │  ├── DataManager.hpp
+│  │  ├── GameConfigDB.hpp
+│  │  ├── KeybindDB.hpp
+│  │  ├── SceneDB.hpp
+│  │  ├── SettingsDB.hpp
+│  │  └── ThemeDB.hpp
+│  ├── ecs
+│  │  ├── components
+│  │  │  ├── Animator.hpp
+│  │  │  ├── AudioSource.hpp
+│  │  │  ├── Collider2D.hpp
+│  │  │  ├── Health.hpp
+│  │  │  ├── RigidBody2D.hpp
+│  │  │  ├── Script.hpp
+│  │  │  ├── Sprite.hpp
+│  │  │  ├── Tags.hpp
+│  │  │  ├── Transform2D.hpp
+│  │  │  └── Velocity2D.hpp
+│  │  ├── Entity.hpp
+│  │  ├── Registry.hpp
+│  │  └── systems
+│  │     ├── AISystem.hpp
+│  │     ├── AnimationSystem.hpp
+│  │     ├── CollisionSystem2D.hpp
+│  │     ├── HealthSystem.hpp
+│  │     ├── MovementSystem2D.hpp
+│  │     ├── PhysicsSystem2D.hpp
+│  │     ├── RenderSystem2D.hpp
+│  │     └── ScriptSystem.hpp
+│  ├── input
+│  │  ├── Gamepad.hpp
+│  │  ├── InputAction.hpp
+│  │  ├── InputManager.hpp
+│  │  ├── Keyboard.hpp
+│  │  └── Mouse.hpp
+│  ├── physics
+│  │  ├── Collider2D.hpp
+│  │  ├── PhysicsSystem2D.hpp
+│  │  ├── PhysicsWorld2D.hpp
+│  │  └── RigidBody2D.hpp
+│  ├── pool
+│  │  ├── ObjectPool.hpp
+│  │  ├── Poolable.hpp
+│  │  └── PoolManager.hpp
+│  ├── renderer
+│  │  ├── Camera2D.hpp
+│  │  ├── DebugDraw2D.hpp
+│  │  ├── Renderer2D.hpp
+│  │  ├── RenderLayer.hpp
+│  │  └── SpriteBatch.hpp
+│  ├── resources
+│  │  ├── DataLoader.hpp
+│  │  ├── FontLoader.hpp
+│  │  ├── MusicLoader.hpp
+│  │  ├── ResourceManager.hpp
+│  │  ├── SoundLoader.hpp
+│  │  └── TextureLoader.hpp
+│  ├── scene
+│  │  ├── Scene.hpp
+│  │  ├── SceneManager.hpp
+│  │  └── transitions
+│  │     ├── FadeTransition.hpp
+│  │     ├── SceneTransition.hpp
+│  │     ├── SlideTransition.hpp
+│  │     └── ZoomTransition.hpp
+│  ├── ui
+│  │  ├── animation
+│  │  │  ├── UIAnimator.hpp
+│  │  │  └── UITransition.hpp
+│  │  ├── core
+│  │  │  ├── UICanvas.hpp
+│  │  │  └── UINode.hpp
+│  │  ├── layout
+│  │  │  ├── Anchor.hpp
+│  │  │  ├── FlexLayout.hpp
+│  │  │  └── LayoutEngine.hpp
+│  │  ├── style
+│  │  │  ├── UIStyleSheet.hpp
+│  │  │  └── UITheme.hpp
+│  │  ├── UIContext.hpp
+│  │  ├── UISystem.hpp
+│  │  └── widgets
+│  │     ├── UIButton.hpp
+│  │     ├── UIImage.hpp
+│  │     ├── UILabel.hpp
+│  │     ├── UIPanel.hpp
+│  │     ├── UIScrollView.hpp
+│  │     ├── UISlider.hpp
+│  │     └── UITextInput.hpp
+│  └── utils
+│     ├── EventBus.hpp
+│     ├── Logger.cpp
+│     ├── Logger.hpp
+│     ├── Math2D.hpp
+│     ├── Serializer.hpp
+│     └── UUID.hpp
+├── filename.txt
+├── GameEngine.code-workspace
+├── GameEngine.md
+├── GameEngineDevelopment.md
+├── Phase0.md
+├── Phase1.md
+├── ProjectState.md
+├── SConstruct
+├── setup_vendor.sh
+├── src
+│  └── main.cpp
+└── structure.txt

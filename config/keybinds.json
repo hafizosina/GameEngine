@@ -1,0 +1,49 @@
+{
+    "keybinds": [
+        {
+            "action": "move_up",
+            "keyboard": "W",
+            "gamepad": "LEFT_STICK_UP"
+        },
+        {
+            "action": "move_down",
+            "keyboard": "S",
+            "gamepad": "LEFT_STICK_DOWN"
+        },
+        {
+            "action": "move_left",
+            "keyboard": "A",
+            "gamepad": "LEFT_STICK_LEFT"
+        },
+        {
+            "action": "move_right",
+            "keyboard": "D",
+            "gamepad": "LEFT_STICK_RIGHT"
+        },
+        {
+            "action": "jump",
+            "keyboard": "SPACE",
+            "gamepad": "BUTTON_A"
+        },
+        {
+            "action": "attack",
+            "keyboard": "J",
+            "gamepad": "BUTTON_X"
+        },
+        {
+            "action": "interact",
+            "keyboard": "E",
+            "gamepad": "BUTTON_B"
+        },
+        {
+            "action": "pause",
+            "keyboard": "ESCAPE",
+            "gamepad": "BUTTON_START"
+        },
+        {
+            "action": "debug",
+            "keyboard": "F1",
+            "gamepad": ""
+        }
+    ]
+}

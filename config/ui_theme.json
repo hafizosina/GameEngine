@@ -1,0 +1,31 @@
+{
+    "colors": {
+        "primary": "#4682B4",
+        "primaryHover": "#6aaad4",
+        "primaryPress": "#2a5a8a",
+        "background": "#1e1e23",
+        "surface": "#2d2d34",
+        "textPrimary": "#f0f0f0",
+        "textSecondary": "#a0a0a0",
+        "danger": "#c83c3c",
+        "success": "#3cba5f",
+        "warning": "#d4a017"
+    },
+    "typography": {
+        "fontId": "font.main",
+        "sizeSmall": 12,
+        "sizeNormal": 16,
+        "sizeLarge": 24,
+        "sizeTitle": 48
+    },
+    "shape": {
+        "cornerRadius": 6,
+        "buttonPadX": 16,
+        "buttonPadY": 8,
+        "panelPad": 20
+    },
+    "animation": {
+        "buttonHoverScale": 1.05,
+        "transitionDuration": 0.3
+    }
+}

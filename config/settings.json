@@ -1,0 +1,21 @@
+{
+    "display": {
+        "width": 1280,
+        "height": 720,
+        "title": "Zhenzhu Engine - Tested",
+        "fullscreen": false,
+        "vsync": true,
+        "targetFPS": 60
+    },
+    "audio": {
+        "masterVolume": 1.0,
+        "sfxVolume": 0.8,
+        "musicVolume": 0.6,
+        "muted": false
+    },
+    "gameplay": {
+        "language": "en",
+        "difficulty": "normal",
+        "showFPS": true
+    }
+}

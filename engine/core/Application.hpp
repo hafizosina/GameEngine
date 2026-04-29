@@ -2,6 +2,7 @@
 #include "Window.hpp"
 #include "Timer.hpp"
 #include "EngineConfig.hpp"
+#include "data/DataManager.hpp"
 
 namespace Zhenzhu {
 
@@ -22,6 +23,7 @@ private:
     Window        m_Window;
     Timer         m_Timer;
     EngineConfig  m_Config;
+    DataManager   m_Data;
 
     static inline bool s_Running = false;
 };

@@ -8,22 +8,28 @@ namespace Zhenzhu {
 void Application::Init() {
     Logger::Init("engine.log");
     LOG_INFO("=== Zhenzhu Engine v0.1.0 ===");
-    LOG_INFO("Phase 0 — Project Foundation");
 
-    // Phase 1 will replace this with DataManager reads
-    m_Config.windowWidth  = 1280;
-    m_Config.windowHeight = 720;
-    m_Config.title        = "Zhenzhu Engine";
-    m_Config.targetFPS    = 60;
+    // ── Phase 1: Data first ──────────────────────────
+    m_Data.Init();
+
+    // ── Window now reads from SettingsDB ─────────────
+    auto& s = m_Data.settings;
+    m_Config.windowWidth  = s.display.width;
+    m_Config.windowHeight = s.display.height;
+    m_Config.title        = s.display.title;
+    m_Config.targetFPS    = s.display.targetFPS;
+    m_Config.fullscreen   = s.display.fullscreen;
+    m_Config.vsync        = s.display.vsync;
 
     m_Window.Create(m_Config);
 
-    // Register core services
+    // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
     ServiceLocator::Register(&m_Timer);
+    ServiceLocator::Register(&m_Data);
 
     s_Running = true;
-    LOG_INFO("Application initialized");
+    LOG_INFO("Application initialized ✓");
 }
 
 void Application::Run() {
@@ -77,10 +83,12 @@ void Application::Render() {
 
         // Phase 5 — SceneManager.Render() goes here
 
-        // Phase 0 — temp debug info
+        // Phase 1 — debug info
 #ifdef ENGINE_DEBUG
-        DrawFPS(10, 10);
-        DrawText("Zhenzhu Engine — Phase 0", 10, 40, 20, GRAY);
+        if (m_Data.settings.gameplay.showFPS) {
+            DrawFPS(10, 10);
+        }
+        DrawText("Zhenzhu Engine — Phase 1", 10, 40, 20, GRAY);
 #endif
 
     EndDrawing();
