@@ -1,33 +1,27 @@
-# Build directories and compiler outputs
-build/
-obj/
+# Build output
 *.o
-strategygame
-
-# SCons build tracking
+*.a
+*.so
 .sconsign.dblite
+MyGame
 
-# CMake files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-compile_commands.json
-CPackConfig.cmake
-CPackSourceConfig.cmake
+# Logs
+*.log
 
-# External dependencies
-external/
-_deps/
+# Python Virtual Environment
+.venv/
 
-# IDEs and Editors
-.vscode/
+# CLion
 .idea/
-*.swp
-*.swo
+cmake-build-*/
+build/
 
-# OS generated files
+# Vendor libraries (managed via script/SCons)
+vendor/
+
+# OS
 .DS_Store
 Thumbs.db
-/.cache/
-/.cursor/
+
+# Generated placeholders (Phase 2+)
+assets/placeholder/
