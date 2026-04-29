@@ -1,20 +1,31 @@
 # Build output
+build/
+build_cmake/
+cmake-build-*/
+out/
+bin/
 *.o
 *.a
 *.so
+*.lib
+*.dll
+*.exe
 .sconsign.dblite
 MyGame
 
 # Logs
 *.log
+engine.log
 
 # Python Virtual Environment
 .venv/
+__pycache__/
 
-# CLion
+# IDEs
 .idea/
-cmake-build-*/
-build/
+.vscode/
+*.swp
+*.swo
 
 # Vendor libraries (managed via script/SCons)
 vendor/
