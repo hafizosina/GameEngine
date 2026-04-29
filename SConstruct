@@ -21,7 +21,7 @@ env.Append(CPPPATH=[
 
 # Library directories
 env.Append(LIBPATH=[
-    '.',
+    'build',
     'vendor/raylib/src',
     'vendor/box2d/build/bin'
 ])
@@ -33,18 +33,23 @@ env.Append(LIBS=['raylib', 'box2d'])
 if env['PLATFORM'] == 'posix' or env['PLATFORM'] == 'darwin':
     env.Append(LIBS=['GL', 'm', 'pthread', 'dl', 'rt', 'X11'])
 
-# Gather source files
-engine_src = Glob('engine/core/*.cpp') + Glob('engine/utils/*.cpp')
-game_src = Glob('src/*.cpp')
+# ── Build Setup ──────────────────────────────────
+# Redirect all compiled objects to build/ directory
+env.VariantDir('build/engine', 'engine', duplicate=0)
+env.VariantDir('build/src',    'src',    duplicate=0)
 
-# Build the engine as a static library
-engine_lib = env.StaticLibrary('zhenzhu-engine', engine_src)
+engine_src = Glob('build/engine/core/*.cpp') + Glob('build/engine/utils/*.cpp')
+game_src   = Glob('build/src/*.cpp')
 
-# Build the main game executable
-# Note: Since the engine depends on vendor libs, we link them into the final executable as well
-# SCons handles LIBS order properly
+# Build the engine as a static library in build/
+engine_lib = env.StaticLibrary('build/zhenzhu-engine', engine_src)
+
+# Build the main game executable in build/
 env.Prepend(LIBS=['zhenzhu-engine'])
-game = env.Program('MyGame', game_src)
+game = env.Program('build/MyGame', game_src)
+
+# Create a symlink in root for convenience (optional)
+# env.Command('MyGame', game, 'ln -sf build/MyGame MyGame')
 
 # Default target
 Default(game)
