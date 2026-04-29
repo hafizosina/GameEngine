@@ -1,4 +1,13 @@
 .
+├── assets
+│  ├── fonts
+│  ├── sounds
+│  │  ├── bgm
+│  │  └── sfx
+│  └── textures
+│     ├── player
+│     └── ui
+├── CMakeLists.txt
 ├── config
 │  ├── assets.json
 │  ├── game_config.json
@@ -13,17 +22,24 @@
 │  ├── GameEngineRules.md
 │  ├── Phase0.md
 │  ├── Phase1.md
+│  ├── Phase1Review.md
+│  ├── Phase2.md
 │  ├── ProjectState.md
 │  └── structure.txt
 ├── engine
 │  ├── assets
 │  │  ├── AssetEntry.hpp
+│  │  ├── AssetIDs.hpp
+│  │  ├── AssetTracker.cpp
 │  │  └── AssetTracker.hpp
 │  ├── async
 │  │  ├── AsyncHandle.hpp
 │  │  ├── AsyncJob.hpp
+│  │  ├── AsyncManager.cpp
 │  │  ├── AsyncManager.hpp
+│  │  ├── MainThreadDispatcher.cpp
 │  │  ├── MainThreadDispatcher.hpp
+│  │  ├── ThreadPool.cpp
 │  │  └── ThreadPool.hpp
 │  ├── audio
 │  │  ├── AudioBus.hpp
@@ -92,11 +108,17 @@
 │  │  ├── RenderLayer.hpp
 │  │  └── SpriteBatch.hpp
 │  ├── resources
+│  │  ├── DataLoader.cpp
 │  │  ├── DataLoader.hpp
+│  │  ├── FontLoader.cpp
 │  │  ├── FontLoader.hpp
+│  │  ├── MusicLoader.cpp
 │  │  ├── MusicLoader.hpp
+│  │  ├── ResourceManager.cpp
 │  │  ├── ResourceManager.hpp
+│  │  ├── SoundLoader.cpp
 │  │  ├── SoundLoader.hpp
+│  │  ├── TextureLoader.cpp
 │  │  └── TextureLoader.hpp
 │  ├── scene
 │  │  ├── Scene.hpp
