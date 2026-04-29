@@ -1,0 +1,11 @@
+BasedOnStyle:              Google
+IndentWidth:               4
+ColumnLimit:               120
+BraceWrapping:
+  AfterFunction:           true
+  AfterClass:              true
+  AfterControlStatement:   false
+BreakBeforeBraces:         Custom
+PointerAlignment:          Left
+SpaceAfterTemplateKeyword: false
+SortIncludes:              false
