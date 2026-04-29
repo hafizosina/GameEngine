@@ -21,3 +21,13 @@ The `EventBus` currently uses `std::any` to type-erase event data. While this cr
 - Physics Collisions (Use direct callbacks or an ECS system)
 - ECS Entity Updates (Every frame logic)
 - Render Loop Events (Draw calls, frame syncs)
+
+---
+
+## 2. Separation of Engine and Game Logic
+
+**Rule:** Maintain strict separation between Engine code (`engine/`) and Game Implementation code (`src/`).
+
+**Guidelines:**
+- **Do NOT write Game Logic in Engine Code:** The engine should provide generic, reusable systems (e.g., Physics, Rendering, ECS) without knowing about specific game elements (e.g., Player, Enemies, Coins).
+- **Do NOT create Engine Components in Game Logic Code:** Core engine components (e.g., `Transform`, `SpriteRenderer`, `Collider`) should be defined in `engine/`. The game code (`src/`) should only consume these components or define game-specific components (e.g., `Health`, `PlayerController`).
