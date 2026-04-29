@@ -29,6 +29,9 @@ set(SPDLOG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include")
 file(GLOB_RECURSE ENGINE_SOURCES 
     "engine/core/*.cpp"
     "engine/utils/*.cpp"
+    "engine/async/*.cpp"
+    "engine/resources/*.cpp"
+    "engine/assets/*.cpp"
 )
 
 add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})
