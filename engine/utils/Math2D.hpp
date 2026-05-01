@@ -22,6 +22,14 @@ struct Vec2 {
     float Dot(const Vec2& o) const { return x*o.x + y*o.y; }
 };
 
+struct Rect {
+    float x = 0.0f, y = 0.0f, w = 0.0f, h = 0.0f;
+};
+
+struct Color4 {
+    unsigned char r = 0, g = 0, b = 0, a = 255;
+};
+
 namespace Math2D {
 
     inline float Lerp(float a, float b, float t) {
@@ -60,6 +68,11 @@ namespace Math2D {
 
     inline float RadToDegrees(float rad) {
         return rad * (180.0f / 3.14159265f);
+    }
+
+    inline bool PointInRect(Vec2 p, const Rect& r) {
+        return p.x >= r.x && p.x <= r.x + r.w &&
+               p.y >= r.y && p.y <= r.y + r.h;
     }
 }
 

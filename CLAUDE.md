@@ -69,7 +69,7 @@
 | 3 | Renderer 2D & Input | ✅ Complete |
 | 4 | ECS & Physics | ✅ Complete |
 | 5 | Scene & Audio | ✅ Complete |
-| 6 | UI System | ⏳ Pending |
+| 6 | UI System | 🏃 In Progress |
 | 7 | Polish & Game Ready | ⏳ Pending |
 
 ### What is implemented vs. stub
@@ -98,8 +98,18 @@
 - `engine/scene/` — `Scene`, `SceneManager`, `SceneTransition`, `FadeTransition`, `SlideTransition`, `ZoomTransition`
 - `engine/audio/` — `AudioManager`, `SoundPlayer`, `MusicPlayer`, `AudioBus`
 
-**Phases 6–7 — stub files only (do not implement yet):**
-- `engine/ui/` — all stubs
+**Phase 6 (Core implemented — do not re-implement):**
+- `engine/ui/` — UISystem, UICanvas, UINode, UITheme
+- `engine/ui/animation/` — UIAnimator, UITransition
+- `engine/ui/layout/` — LayoutEngine, FlexLayout, Anchor
+- `engine/ui/widgets/` — UILabel, UIImage, UIPanel, UIButton, UISlider, UIScrollView, UITextInput
+- `engine/ui/UIContext.hpp`, `engine/ui/style/UIStyleSheet.hpp`
+
+**Phase 6 — remaining tasks:**
+- Phase 6 Baking: `TextureBaker`, `SoundComposer` (stubs pending)
+
+**Phase 7 — stub files only (do not implement yet):**
+- Polish, debug tooling, game-ready cleanup
 
 **Always read `docs/Phase6.md` before implementing Phase 6 code.**
 

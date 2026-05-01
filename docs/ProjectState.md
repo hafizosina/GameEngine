@@ -1,6 +1,6 @@
 # Zhenzhu Engine — Project State
 
-**Current Status**: 🟢 Phase 5 Complete | 🟡 Phase 6 Starting
+**Current Status**: 🟢 Phase 5 Complete | 🟡 Phase 6 In Progress
 **Build System**: SCons
 **Primary Language**: C++20
 
@@ -16,12 +16,31 @@
 | **Phase 3** | Core 2D Renderer & Input | ✅ Complete | 100% |
 | **Phase 4** | ECS & Physics | ✅ Complete | 100% |
 | **Phase 5** | Scene & Audio | ✅ Complete | 100% |
-| **Phase 6** | UI System | ⏳ Pending | 0% |
+| **Phase 6** | UI System | 🏃 In Progress | 90% |
 | **Phase 7** | Final Polish & Build | ⏳ Pending | 0% |
 
 ---
 
 ## ✅ Completed Features
+26: 
+27: ### Phase 6: UI System (Core & Essential Widgets)
+28: - [x] **UIContext** — POD struct containing pointers to essential engine services for widgets
+29: - [x] **UIStyleSheet** — lightweight data for per-widget style overrides
+30: - [x] **Anchor** — sophisticated positioning system (TopLeft to BottomRight + Fill)
+31: - [x] **UITheme** — wraps ThemeDB, provides semantic colors and loads engine font
+32: - [x] **UINode** — tree-based base class with AddChild/Remove/Find logic and Layout pass
+33: - [x] **LayoutEngine** — static utility for resolving screen rects from anchors and sizes
+34: - [x] **UIAnimator / UITransition** — smooth scaling and alpha fade effects with easing
+35: - [x] **UICanvas** — root node covering full screen; triggers Layout(screen) before Update
+36: - [x] **UILabel** — text rendering using theme font and semantic colors
+37: - [x] **UIImage** — sprite rendering using ResourceManager asset IDs
+38: - [x] **UIPanel** — background container with support for **FlexLayout** (Row/Column)
+39: - [x] **UIButton** — fully interactive widget with hover/press states and click callbacks
+40: - [x] **UISlider** — tracks mouse drag and fires onChange(float) with the new value
+41: - [x] **UIScrollView** — scrolls children with the mouse wheel; content clipped to bounds
+42: - [x] **UITextInput** — accepts keyboard characters, shows blinking cursor, fires onChange
+43: - [x] **UISystem** — engine service managing the global theme and making contexts
+44: 
 
 ### Phase 5: Scene & Audio
 - [x] **AudioBus** — named volume group (master / sfx / music) with mute toggle
@@ -79,7 +98,13 @@
 
 ## 🏃 Current Tasks (Phase 6)
 
-_Phase 6 (UI System) not yet started._
+- [x] Plan written — `docs/Phase6.md`
+- [x] UIContext, UIStyleSheet, Anchor, UITheme
+- [x] UINode base class + LayoutEngine + FlexLayout
+- [x] UIAnimator, UITransition
+- [x] UICanvas (root), UILabel, UIImage, UIPanel
+- [x] UIButton, UISlider, UIScrollView, UITextInput
+- [x] UISystem + Application integration
 
 ---
 

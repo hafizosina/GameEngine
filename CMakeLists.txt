@@ -38,6 +38,12 @@ file(GLOB_RECURSE ENGINE_SOURCES
     "engine/audio/*.cpp"
     "engine/scene/*.cpp"
     "engine/scene/transitions/*.cpp"
+    "engine/ui/*.cpp"
+    "engine/ui/core/*.cpp"
+    "engine/ui/style/*.cpp"
+    "engine/ui/layout/*.cpp"
+    "engine/ui/animation/*.cpp"
+    "engine/ui/widgets/*.cpp"
 )
 
 add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})

@@ -6,9 +6,6 @@
 
 namespace Zhenzhu {
 
-struct Rect   { float x, y, w, h; };
-struct Color4 { unsigned char r, g, b, a; };
-
 class Renderer2D {
 public:
     void Init();

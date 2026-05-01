@@ -16,6 +16,7 @@
 // Phase 5
 #include "audio/AudioManager.hpp"
 #include "scene/SceneManager.hpp"
+#include "ui/UISystem.hpp"
 
 namespace Zhenzhu {
 
@@ -50,6 +51,7 @@ private:
     // Phase 5
     AudioManager  m_Audio;
     SceneManager  m_SceneManager;
+    UISystem      m_UI;
 
     static inline bool s_Running = false;
 };

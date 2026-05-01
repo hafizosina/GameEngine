@@ -37,6 +37,7 @@ void Application::Init() {
     // ── Phase 5 ──────────────────────────────────────
     m_Audio.Init(&m_Data.settings);
     m_SceneManager.Init();
+    m_UI.Init(&m_Data.theme, &m_Resources);
 
     // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
@@ -49,6 +50,7 @@ void Application::Init() {
     ServiceLocator::Register(&m_Renderer);
     ServiceLocator::Register(&m_Audio);
     ServiceLocator::Register(&m_SceneManager);
+    ServiceLocator::Register(&m_UI);
 
     s_Running = true;
     LOG_INFO("Application initialized");
@@ -78,6 +80,7 @@ void Application::Shutdown() {
     LOG_INFO("Shutting down...");
     m_SceneManager.Shutdown();
     m_Audio.Shutdown();
+    m_UI.Shutdown();
     m_Resources.Clear();
     m_Renderer.Shutdown();
     m_Async.Shutdown();
