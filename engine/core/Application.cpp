@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "ServiceLocator.hpp"
 #include "utils/Logger.hpp"
+#include "renderer/DebugDraw2D.hpp"
 #include <raylib.h>
 
 namespace Zhenzhu {
@@ -30,6 +31,10 @@ void Application::Init() {
 
     m_Resources.Init(&m_AssetTracker, &m_Async);
 
+    // ── Phase 3 ──────────────────────────────────────
+    m_Input.Init(&m_Data.keybinds);
+    m_Renderer.Init();
+
     // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
     ServiceLocator::Register(&m_Timer);
@@ -37,6 +42,8 @@ void Application::Init() {
     ServiceLocator::Register(&m_Async);
     ServiceLocator::Register(&m_AssetTracker);
     ServiceLocator::Register(&m_Resources);
+    ServiceLocator::Register(&m_Input);
+    ServiceLocator::Register(&m_Renderer);
 
     s_Running = true;
     LOG_INFO("Application initialized ✓");
@@ -69,6 +76,7 @@ void Application::Run() {
 void Application::Shutdown() {
     LOG_INFO("Shutting down...");
     m_Resources.Clear();
+    m_Renderer.Shutdown();
     m_Async.Shutdown();
     ServiceLocator::Clear();
     m_Window.Close();
@@ -80,7 +88,7 @@ void Application::Quit() {
 }
 
 void Application::ProcessInput() {
-    // Phase 3 — InputManager.Update() goes here
+    m_Input.Update();
 }
 
 void Application::Update(float dt) {
@@ -93,20 +101,17 @@ void Application::FixedUpdate() {
 }
 
 void Application::Render() {
-    BeginDrawing();
-        ClearBackground({ 20, 20, 25, 255 });
+    m_Renderer.Begin();
 
         // Phase 5 — SceneManager.Render() goes here
 
-        // Phase 1 — debug info
 #ifdef ENGINE_DEBUG
-        if (m_Data.settings.gameplay.showFPS) {
-            DrawFPS(10, 10);
-        }
-        DrawText("Zhenzhu Engine — Phase 2", 10, 40, 20, GRAY);
+        if (m_Data.settings.gameplay.showFPS)
+            DebugDraw2D::DrawFPS({10, 10});
+        DrawText("Zhenzhu Engine — Phase 3", 10, 40, 20, GRAY);
 #endif
 
-    EndDrawing();
+    m_Renderer.End();
 }
 
 } // namespace Zhenzhu

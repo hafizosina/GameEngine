@@ -39,11 +39,13 @@ env.VariantDir('build/engine', 'engine', duplicate=0)
 env.VariantDir('build/src',    'src',    duplicate=0)
 
 engine_src = (
-    Glob('build/engine/core/*.cpp') + 
+    Glob('build/engine/core/*.cpp') +
     Glob('build/engine/utils/*.cpp') +
     Glob('build/engine/async/*.cpp') +
     Glob('build/engine/resources/*.cpp') +
-    Glob('build/engine/assets/*.cpp')
+    Glob('build/engine/assets/*.cpp') +
+    Glob('build/engine/renderer/*.cpp') +
+    Glob('build/engine/input/*.cpp')
 )
 game_src   = Glob('build/src/*.cpp')
 

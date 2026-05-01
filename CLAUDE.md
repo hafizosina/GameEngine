@@ -66,8 +66,8 @@
 | 0 | Project Foundation & Build System | ✅ Complete |
 | 1 | Data & Config Layer | ✅ Complete |
 | 2 | Asset Pipeline & Resource Management | ✅ Complete |
-| 3 | Renderer 2D & Input | 🏃 In Progress |
-| 4 | ECS & Physics | ⏳ Pending |
+| 3 | Renderer 2D & Input | ✅ Complete |
+| 4 | ECS & Physics | 🏃 In Progress |
 | 5 | Scene & Audio | ⏳ Pending |
 | 6 | UI System | ⏳ Pending |
 | 7 | Polish & Game Ready | ⏳ Pending |
@@ -83,22 +83,20 @@
 - `engine/async/` — `AsyncManager`, `ThreadPool`, `MainThreadDispatcher`, `AsyncHandle`, `AsyncJob`
 - `engine/pool/` — `ObjectPool`, `PoolManager`, `Poolable`
 
-**Phase 3 — stub files only (this is what needs to be built next):**
-- `engine/renderer/Renderer2D.hpp` — stub
-- `engine/renderer/Camera2D.hpp` — stub
-- `engine/renderer/SpriteBatch.hpp` — stub
-- `engine/renderer/RenderLayer.hpp` — stub
-- `engine/renderer/DebugDraw2D.hpp` — stub
-- `engine/input/InputManager.hpp` — stub
-- `engine/input/Keyboard.hpp` — stub
-- `engine/input/Mouse.hpp` — stub
-- `engine/input/Gamepad.hpp` — stub
-- `engine/input/InputAction.hpp` — stub
+**Phase 3 (fully implemented — do not re-implement):**
+- `engine/renderer/` — `Renderer2D`, `Camera2D`, `SpriteBatch`, `RenderLayer`, `DebugDraw2D`
+- `engine/input/` — `InputManager`, `Keyboard`, `Mouse`, `Gamepad`, `InputAction`
 
-**Phases 4–7 — stub files only (do not implement yet):**
-- `engine/ecs/`, `engine/scene/`, `engine/audio/`, `engine/physics/`, `engine/ui/` — all stubs
+**Phase 4 — stub files only (this is what needs to be built next):**
+- `engine/ecs/Registry.hpp`, `engine/ecs/Entity.hpp` — stubs
+- `engine/ecs/components/` — all stubs (Transform2D, Velocity2D, Health, Sprite, Animator, Collider2D, RigidBody2D, AudioSource, Script, Tags)
+- `engine/ecs/systems/` — all stubs (MovementSystem2D, RenderSystem2D, AnimationSystem, HealthSystem, CollisionSystem2D, PhysicsSystem2D, AISystem, ScriptSystem)
+- `engine/physics/` — all stubs (PhysicsWorld2D, RigidBody2D, Collider2D, PhysicsSystem2D)
 
-**Always read `docs/Phase3.md` before implementing Phase 3 code.**
+**Phases 5–7 — stub files only (do not implement yet):**
+- `engine/scene/`, `engine/audio/`, `engine/ui/` — all stubs
+
+**Always read `docs/Phase4.md` before implementing Phase 4 code.**
 
 ---
 

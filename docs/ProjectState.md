@@ -1,6 +1,6 @@
 # Zhenzhu Engine — Project State
 
-**Current Status**: 🟢 Phase 2 Complete | 🟡 Phase 3 Starting
+**Current Status**: 🟢 Phase 3 Complete | 🟡 Phase 4 Starting
 **Build System**: SCons & CMake
 **Primary Language**: C++20
 
@@ -13,8 +13,8 @@
 | **Phase 0** | Project Foundation & Build System | ✅ Complete | 100% |
 | **Phase 1** | Data & Config Layer | ✅ Complete | 100% |
 | **Phase 2** | Resource Management | ✅ Complete | 100% |
-| **Phase 3** | Core 2D Renderer | 🏃 In Progress | 0% |
-| **Phase 4** | ECS & Scene System | ⏳ Pending | 0% |
+| **Phase 3** | Core 2D Renderer | ✅ Complete | 100% |
+| **Phase 4** | ECS & Scene System | 🏃 In Progress | 0% |
 | **Phase 5** | Physics & Audio | ⏳ Pending | 0% |
 | **Phase 6** | UI System | ⏳ Pending | 0% |
 | **Phase 7** | Final Polish & Build | ⏳ Pending | 0% |
@@ -53,12 +53,20 @@
 
 ---
 
-## 🏃 Current Tasks (Phase 3)
+## ✅ Completed Features
 
-- [ ] **Renderer2D**: High-level sprite and primitive batching.
-- [ ] **Camera**: 2D camera system with zooming and tracking.
-- [ ] **Textures**: Support for sub-textures and sprite sheets (atlas support).
-- [ ] **Input**: Mouse and keyboard abstraction layer.
+### Phase 3: Core 2D Renderer & Input
+- [x] **RenderLayer** — enum (Background / Midground / Foreground / Entities / UI)
+- [x] **Keyboard / Mouse / Gamepad** — header-only raylib wrappers returning `Vec2` / engine types
+- [x] **InputAction** — named action with `GamepadBind` supporting both buttons and analog stick axes
+- [x] **InputManager** — reads KeybindDB string names, maps to raylib keys via lookup table, exposes `GetAction(name)`
+- [x] **Renderer2D** — `Begin`/`End`, `DrawSprite`, `DrawSpriteEx`, `DrawText`, `DrawRect`, `DrawCircle`, `DrawLine`
+- [x] **Camera2D** — `Follow` with lerp, `Shake` with decay, `ScreenToWorld`/`WorldToScreen`
+- [x] **SpriteBatch** — `Submit` + `Flush` sorted by `RenderLayer`
+- [x] **DebugDraw2D** — grid / rect / circle / fps helpers, no-op in release builds
+- [x] **Application integration** — `ProcessInput` calls `InputManager::Update`, `Render` uses `Renderer2D::Begin/End`
+
+## 🏃 Current Tasks (Phase 4)
 
 ---
 

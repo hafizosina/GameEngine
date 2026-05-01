@@ -9,6 +9,10 @@
 #include "async/AsyncManager.hpp"
 #include "resources/ResourceManager.hpp"
 
+// Phase 3
+#include "renderer/Renderer2D.hpp"
+#include "input/InputManager.hpp"
+
 namespace Zhenzhu {
 
 class Application {
@@ -34,6 +38,10 @@ private:
     AssetTracker    m_AssetTracker;
     AsyncManager    m_Async;
     ResourceManager m_Resources;
+
+    // Phase 3
+    Renderer2D   m_Renderer;
+    InputManager m_Input;
 
     static inline bool s_Running = false;
 };
