@@ -18,6 +18,7 @@ public:
     std::vector<AssetEntry> GetAllPlaceholders() const;
     std::vector<AssetEntry> GetAllMissing() const;
 
+    void BakeMissing();
     void Report() const;
 
 private:

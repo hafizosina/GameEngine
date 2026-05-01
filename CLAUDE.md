@@ -98,15 +98,13 @@
 - `engine/scene/` — `Scene`, `SceneManager`, `SceneTransition`, `FadeTransition`, `SlideTransition`, `ZoomTransition`
 - `engine/audio/` — `AudioManager`, `SoundPlayer`, `MusicPlayer`, `AudioBus`
 
-**Phase 6 (Core implemented — do not re-implement):**
+**Phase 6 (Fully implemented — do not re-implement):**
 - `engine/ui/` — UISystem, UICanvas, UINode, UITheme
 - `engine/ui/animation/` — UIAnimator, UITransition
 - `engine/ui/layout/` — LayoutEngine, FlexLayout, Anchor
 - `engine/ui/widgets/` — UILabel, UIImage, UIPanel, UIButton, UISlider, UIScrollView, UITextInput
 - `engine/ui/UIContext.hpp`, `engine/ui/style/UIStyleSheet.hpp`
-
-**Phase 6 — remaining tasks:**
-- Phase 6 Baking: `TextureBaker`, `SoundComposer` (stubs pending)
+- Phase 6 Baking: `TextureBaker`, `SoundComposer` — integrated into `AssetTracker`
 
 **Phase 7 — stub files only (do not implement yet):**
 - Polish, debug tooling, game-ready cleanup

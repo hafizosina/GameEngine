@@ -1,6 +1,8 @@
 #include "assets/AssetTracker.hpp"
 #include "data/AssetDB.hpp"
 #include "utils/Logger.hpp"
+#include "assets/TextureBaker.hpp"
+#include "assets/SoundComposer.hpp"
 #include <filesystem>
 
 namespace Zhenzhu {
@@ -85,6 +87,35 @@ std::vector<AssetEntry> AssetTracker::GetAllMissing() const {
         }
     }
     return result;
+}
+
+void AssetTracker::BakeMissing() {
+    if (!m_DB) return;
+
+    auto missing = GetAllMissing();
+    if (missing.empty()) return;
+
+    LOG_INFO("AssetTracker: detected " + std::to_string(missing.size()) + " missing assets. Starting baking...");
+
+    bool anyBaked = false;
+    for (auto& entry : missing) {
+        if (entry.placeholderPath.empty()) continue;
+
+        if (entry.type == AssetType::TEXTURE) {
+            if (TextureBaker::BakePlaceholder(entry.id, entry.placeholderPath)) {
+                anyBaked = true;
+            }
+        } else if (entry.type == AssetType::SOUND || entry.type == AssetType::MUSIC) {
+            if (SoundComposer::BakePlaceholder(entry.id, entry.placeholderPath)) {
+                anyBaked = true;
+            }
+        }
+    }
+
+    if (anyBaked) {
+        LOG_INFO("AssetTracker: baking finished. Re-scanning...");
+        RescanStatus();
+    }
 }
 
 void AssetTracker::Report() const {
