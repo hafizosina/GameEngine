@@ -68,7 +68,7 @@
 | 2 | Asset Pipeline & Resource Management | ✅ Complete |
 | 3 | Renderer 2D & Input | ✅ Complete |
 | 4 | ECS & Physics | ✅ Complete |
-| 5 | Scene & Audio | ⏳ Pending |
+| 5 | Scene & Audio | ✅ Complete |
 | 6 | UI System | ⏳ Pending |
 | 7 | Polish & Game Ready | ⏳ Pending |
 
@@ -94,14 +94,14 @@
 - `engine/pool/` — `Poolable`, `ObjectPool<T>`, `PoolManager`
 - `engine/utils/Events.hpp` — CollisionEvent, EntityDiedEvent, HealthChangedEvent
 
-**Phase 5 — stub files only (this is what needs to be built next):**
-- `engine/scene/` — Scene, SceneManager, transitions (FadeTransition, SlideTransition, ZoomTransition)
-- `engine/audio/` — AudioManager, SoundPlayer, MusicPlayer, AudioBus
+**Phase 5 (fully implemented — do not re-implement):**
+- `engine/scene/` — `Scene`, `SceneManager`, `SceneTransition`, `FadeTransition`, `SlideTransition`, `ZoomTransition`
+- `engine/audio/` — `AudioManager`, `SoundPlayer`, `MusicPlayer`, `AudioBus`
 
 **Phases 6–7 — stub files only (do not implement yet):**
 - `engine/ui/` — all stubs
 
-**Always read `docs/Phase5.md` before implementing Phase 5 code.**
+**Always read `docs/Phase6.md` before implementing Phase 6 code.**
 
 ---
 

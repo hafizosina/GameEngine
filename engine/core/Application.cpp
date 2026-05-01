@@ -13,7 +13,7 @@ void Application::Init() {
     // ── Phase 1: Data first ──────────────────────────
     m_Data.Init();
 
-    // ── Window now reads from SettingsDB ─────────────
+    // ── Window reads from SettingsDB ─────────────────
     auto& s = m_Data.settings;
     m_Config.windowWidth  = s.display.width;
     m_Config.windowHeight = s.display.height;
@@ -28,12 +28,15 @@ void Application::Init() {
     m_Async.Init();
     m_AssetTracker.Init(&m_Data.assets);
     m_AssetTracker.Report();
-
     m_Resources.Init(&m_AssetTracker, &m_Async);
 
     // ── Phase 3 ──────────────────────────────────────
     m_Input.Init(&m_Data.keybinds);
     m_Renderer.Init();
+
+    // ── Phase 5 ──────────────────────────────────────
+    m_Audio.Init(&m_Data.settings);
+    m_SceneManager.Init();
 
     // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
@@ -44,9 +47,11 @@ void Application::Init() {
     ServiceLocator::Register(&m_Resources);
     ServiceLocator::Register(&m_Input);
     ServiceLocator::Register(&m_Renderer);
+    ServiceLocator::Register(&m_Audio);
+    ServiceLocator::Register(&m_SceneManager);
 
     s_Running = true;
-    LOG_INFO("Application initialized ✓");
+    LOG_INFO("Application initialized");
 }
 
 void Application::Run() {
@@ -56,15 +61,11 @@ void Application::Run() {
         m_Timer.Tick();
         float dt = m_Timer.GetDeltaTime();
 
-        // Phase 2 — flush async callbacks every frame
         m_Async.Flush();
-
         ProcessInput();
 
-        // Fixed timestep loop (for physics in Phase 4)
-        while (m_Timer.ShouldFixedUpdate()) {
+        while (m_Timer.ShouldFixedUpdate())
             FixedUpdate();
-        }
 
         Update(dt);
         Render();
@@ -75,6 +76,8 @@ void Application::Run() {
 
 void Application::Shutdown() {
     LOG_INFO("Shutting down...");
+    m_SceneManager.Shutdown();
+    m_Audio.Shutdown();
     m_Resources.Clear();
     m_Renderer.Shutdown();
     m_Async.Shutdown();
@@ -92,8 +95,8 @@ void Application::ProcessInput() {
 }
 
 void Application::Update(float dt) {
-    // Phase 5 — SceneManager.Update(dt) goes here
-    (void)dt;
+    m_Audio.Update();
+    m_SceneManager.Update(dt);
 }
 
 void Application::FixedUpdate() {
@@ -103,12 +106,11 @@ void Application::FixedUpdate() {
 void Application::Render() {
     m_Renderer.Begin();
 
-        // Phase 5 — SceneManager.Render() goes here
+        m_SceneManager.Render();
 
 #ifdef ENGINE_DEBUG
         if (m_Data.settings.gameplay.showFPS)
             DebugDraw2D::DrawFPS({10, 10});
-        m_Renderer.DrawTextSimple("Zhenzhu Engine — Phase 3", {10, 40}, 20, {200, 200, 200, 255});
 #endif
 
     m_Renderer.End();

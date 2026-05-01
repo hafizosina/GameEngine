@@ -35,6 +35,9 @@ file(GLOB_RECURSE ENGINE_SOURCES
     "engine/renderer/*.cpp"
     "engine/input/*.cpp"
     "engine/physics/*.cpp"
+    "engine/audio/*.cpp"
+    "engine/scene/*.cpp"
+    "engine/scene/transitions/*.cpp"
 )
 
 add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})

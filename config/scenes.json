@@ -1,3 +1,9 @@
 {
-    "scenes": []
+    "initialScene": "gameplay",
+    "scenes": [
+        { "id": "splash",    "label": "Splash Screen" },
+        { "id": "main_menu", "label": "Main Menu" },
+        { "id": "gameplay",  "label": "Gameplay" },
+        { "id": "pause",     "label": "Pause Menu" }
+    ]
 }

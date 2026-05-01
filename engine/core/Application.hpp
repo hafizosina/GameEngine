@@ -13,6 +13,10 @@
 #include "renderer/Renderer2D.hpp"
 #include "input/InputManager.hpp"
 
+// Phase 5
+#include "audio/AudioManager.hpp"
+#include "scene/SceneManager.hpp"
+
 namespace Zhenzhu {
 
 class Application {
@@ -21,7 +25,7 @@ public:
     void Run();
     void Shutdown();
 
-    static void Quit();          // call from anywhere to exit loop
+    static void Quit();
 
 private:
     void ProcessInput();
@@ -42,6 +46,10 @@ private:
     // Phase 3
     Renderer2D   m_Renderer;
     InputManager m_Input;
+
+    // Phase 5
+    AudioManager  m_Audio;
+    SceneManager  m_SceneManager;
 
     static inline bool s_Running = false;
 };
