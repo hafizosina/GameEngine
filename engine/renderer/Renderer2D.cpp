@@ -1,13 +1,14 @@
 #include "renderer/Renderer2D.hpp"
 #include "utils/Logger.hpp"
 #include <raylib.h>
+#include <cmath>
 
 namespace Zhenzhu {
 
 namespace {
-    inline ::Vector2   ToRL(Vec2  v) { return {v.x, v.y}; }
-    inline ::Rectangle ToRL(Rect  r) { return {r.x, r.y, r.w, r.h}; }
-    inline ::Color     ToRL(Color4 c) { return {c.r, c.g, c.b, c.a}; }
+    inline ::Vector2   ToRL(Vec2  v) { return { std::round(v.x), std::round(v.y) }; }
+    inline ::Rectangle ToRL(Rect  r) { return { std::round(r.x), std::round(r.y), std::round(r.w), std::round(r.h) }; }
+    inline ::Color     ToRL(Color4 c) { return { c.r, c.g, c.b, c.a }; }
 }
 
 void Renderer2D::Init() {

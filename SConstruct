@@ -11,6 +11,7 @@ env.Append(CPPDEFINES=['ENGINE_DEBUG'])
 # Include directories
 env.Append(CPPPATH=[
     'engine',
+    'src',
     '.',
     'vendor/nlohmann_json/single_include',
     'vendor/entt/src',
@@ -57,7 +58,7 @@ engine_src = (
     Glob('build/engine/ui/animation/*.cpp') +
     Glob('build/engine/ui/widgets/*.cpp')
 )
-game_src   = Glob('build/src/*.cpp')
+game_src   = Glob('build/src/*.cpp') + Glob('build/src/*/*.cpp')
 
 # Build the engine as a static library in build/
 engine_lib = env.StaticLibrary('build/zhenzhu-engine', engine_src)

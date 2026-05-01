@@ -9,10 +9,17 @@ UICanvas::UICanvas() {
 
 void UICanvas::Update(const UIContext& ctx, float dt) {
     // 1. Layout pass: Start recursion from screen bounds
-    Layout(GetBounds());
+    UICanvas::Layout(GetBounds());
 
     // 2. Update logic recursion
     UINode::Update(ctx, dt);
+}
+
+void UICanvas::Layout(const Rect& parentRect) {
+    m_ScreenRect = parentRect;
+    for (auto& child : m_Children) {
+        child->Layout(m_ScreenRect);
+    }
 }
 
 void UICanvas::Render(const UIContext& ctx) {

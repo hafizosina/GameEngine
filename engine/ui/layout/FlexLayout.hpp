@@ -15,7 +15,7 @@ struct FlexLayout {
     // Positions children inside containerRect (local space: origin at container top-left).
     // Sets child->position so that Layout() resolves them correctly.
     // Children should use Anchor::TopLeft for predictable results.
-    void Apply(const Rect& container,
+    void Apply([[maybe_unused]] const Rect& container,
                std::vector<std::unique_ptr<UINode>>& children) const {
         float cursor = padding;
         for (auto& child : children) {

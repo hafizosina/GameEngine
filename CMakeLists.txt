@@ -50,6 +50,7 @@ add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})
 
 target_include_directories(zhenzhu-engine PUBLIC
     "engine"
+    "src"
     "${JSON_INCLUDE_DIR}"
     "${ENTT_INCLUDE_DIR}"
     "${SPDLOG_INCLUDE_DIR}"
@@ -58,7 +59,7 @@ target_include_directories(zhenzhu-engine PUBLIC
 )
 
 # ── Game Executable ──────────────────────────────
-file(GLOB GAME_SOURCES "src/*.cpp")
+file(GLOB_RECURSE GAME_SOURCES "src/*.cpp")
 
 add_executable(MyGame ${GAME_SOURCES})
 

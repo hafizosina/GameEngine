@@ -9,6 +9,7 @@ namespace Zhenzhu {
 class UICanvas : public UINode {
 public:
     UICanvas();
+    void Layout(const Rect& parentRect) override;
     void Update(const UIContext& ctx, float dt) override;
     void Render(const UIContext& ctx) override;
 
