@@ -32,6 +32,9 @@ file(GLOB_RECURSE ENGINE_SOURCES
     "engine/async/*.cpp"
     "engine/resources/*.cpp"
     "engine/assets/*.cpp"
+    "engine/renderer/*.cpp"
+    "engine/input/*.cpp"
+    "engine/physics/*.cpp"
 )
 
 add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})

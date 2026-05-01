@@ -1,6 +1,7 @@
 # Build output
 build/
 build_cmake/
+build_cmake_test/
 cmake-build-*/
 out/
 bin/
@@ -12,6 +13,7 @@ bin/
 *.exe
 .sconsign.dblite
 MyGame
+compile_commands.json
 
 # Logs
 *.log
