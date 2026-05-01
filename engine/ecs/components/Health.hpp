@@ -1,6 +1,9 @@
 #pragma once
 namespace Zhenzhu {
-class Health {
-    // Stub
+
+struct Health {
+    int current = 100;
+    int max     = 100;
 };
+
 } // namespace Zhenzhu

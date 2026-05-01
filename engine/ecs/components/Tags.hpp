@@ -1,6 +1,11 @@
 #pragma once
 namespace Zhenzhu {
-class Tags {
-    // Stub
-};
+
+struct IsPlayer   {};
+struct IsEnemy    {};
+struct IsDead     {};
+struct IsGrounded {};
+struct IsTrigger  {};
+struct IsStatic   {};
+
 } // namespace Zhenzhu

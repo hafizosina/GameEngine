@@ -108,7 +108,7 @@ void Application::Render() {
 #ifdef ENGINE_DEBUG
         if (m_Data.settings.gameplay.showFPS)
             DebugDraw2D::DrawFPS({10, 10});
-        DrawText("Zhenzhu Engine — Phase 3", 10, 40, 20, GRAY);
+        m_Renderer.DrawTextSimple("Zhenzhu Engine — Phase 3", {10, 40}, 20, {200, 200, 200, 255});
 #endif
 
     m_Renderer.End();

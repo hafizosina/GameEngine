@@ -1,9 +1,8 @@
 # Phase 3 — Renderer 2D & Input
 
-**Status**: 🏃 In Progress  
+**Status**: ✅ Complete  
 **Goal**: Draw things on screen. Read player input by action name.  
-**Namespace**: `Zhenzhu`  
-**All Phase 3 files are currently stubs — implement from scratch.**
+**Namespace**: `Zhenzhu`
 
 ---
 
@@ -623,24 +622,24 @@ Expected result: **a red square that moves with arrow keys (or left stick), came
 
 ```
 Renderer:
-  □ RenderLayer.hpp          — enum defined
-  □ Renderer2D.hpp/.cpp      — Begin/End + all draw methods working
-  □ Camera2D.hpp             — Follow, Shake, ScreenToWorld working
-  □ SpriteBatch.hpp/.cpp     — Submit + Flush + layer sort working
-  □ DebugDraw2D.hpp          — grid + rect + fps helpers, release strips to no-op
+  ✅ RenderLayer.hpp          — enum defined
+  ✅ Renderer2D.hpp/.cpp      — Begin/End + all draw methods + DrawTextSimple working
+  ✅ Camera2D.hpp             — Follow, Shake, ScreenToWorld working
+  ✅ SpriteBatch.hpp          — Submit + Flush + layer sort working (header-only)
+  ✅ DebugDraw2D.hpp          — grid + rect + fps helpers, release strips to no-op
 
 Input:
-  □ Keyboard.hpp             — IsDown / IsPressed / IsReleased
-  □ Mouse.hpp                — GetPosition / buttons / scroll
-  □ Gamepad.hpp              — buttons + sticks
-  □ InputAction.hpp          — IsDown / IsPressed checks both devices
-  □ InputManager.hpp/.cpp    — Init reads KeybindDB, GetAction works
+  ✅ Keyboard.hpp             — IsDown / IsPressed / IsReleased
+  ✅ Mouse.hpp                — GetPosition / buttons / scroll
+  ✅ Gamepad.hpp              — buttons + sticks + GetAxis
+  ✅ InputAction.hpp          — IsDown / IsPressed checks keyboard + GamepadBind (button & axis)
+  ✅ InputManager.hpp/.cpp    — Init reads KeybindDB string names via lookup table, GetAction works
 
 Integration:
-  □ SConstruct updated       — renderer + input globs added
-  □ Application::Init()      — m_Input.Init + m_Renderer.Init called
-  □ Application::ProcessInput() — m_Input.Update() called
-  □ Application::Render()    — Renderer2D.Begin / End used
-  □ Both services registered with ServiceLocator
-  □ Validation test passes   — box moves, camera follows, grid visible
+  ✅ SConstruct updated       — renderer + input globs added
+  ✅ Application::Init()      — m_Input.Init + m_Renderer.Init called
+  ✅ Application::ProcessInput() — m_Input.Update() called
+  ✅ Application::Render()    — Renderer2D.Begin / End used, no direct raylib calls
+  ✅ Both services registered with ServiceLocator
+  ✅ Build compiles clean, zero warnings
 ```

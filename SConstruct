@@ -45,7 +45,8 @@ engine_src = (
     Glob('build/engine/resources/*.cpp') +
     Glob('build/engine/assets/*.cpp') +
     Glob('build/engine/renderer/*.cpp') +
-    Glob('build/engine/input/*.cpp')
+    Glob('build/engine/input/*.cpp') +
+    Glob('build/engine/physics/*.cpp')
 )
 game_src   = Glob('build/src/*.cpp')
 

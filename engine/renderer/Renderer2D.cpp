@@ -73,4 +73,8 @@ void Renderer2D::DrawLine(Vec2 start, Vec2 end, float thick, Color4 color) {
     DrawLineEx(ToRL(start), ToRL(end), thick, ToRL(color));
 }
 
+void Renderer2D::DrawTextSimple(const std::string& text, Vec2 pos, int size, Color4 color) {
+    ::DrawText(text.c_str(), (int)pos.x, (int)pos.y, size, ToRL(color));
+}
+
 } // namespace Zhenzhu

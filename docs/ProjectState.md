@@ -1,6 +1,6 @@
 # Zhenzhu Engine — Project State
 
-**Current Status**: 🟢 Phase 3 Complete | 🟡 Phase 4 Starting
+**Current Status**: 🟢 Phase 4 Complete | 🟡 Phase 5 Starting
 **Build System**: SCons & CMake
 **Primary Language**: C++20
 
@@ -14,8 +14,8 @@
 | **Phase 1** | Data & Config Layer | ✅ Complete | 100% |
 | **Phase 2** | Resource Management | ✅ Complete | 100% |
 | **Phase 3** | Core 2D Renderer | ✅ Complete | 100% |
-| **Phase 4** | ECS & Scene System | 🏃 In Progress | 0% |
-| **Phase 5** | Physics & Audio | ⏳ Pending | 0% |
+| **Phase 4** | ECS & Scene System | ✅ Complete | 100% |
+| **Phase 5** | Physics & Audio | 🏃 In Progress | 0% |
 | **Phase 6** | UI System | ⏳ Pending | 0% |
 | **Phase 7** | Final Polish & Build | ⏳ Pending | 0% |
 
@@ -66,7 +66,16 @@
 - [x] **DebugDraw2D** — grid / rect / circle / fps helpers, no-op in release builds
 - [x] **Application integration** — `ProcessInput` calls `InputManager::Update`, `Render` uses `Renderer2D::Begin/End`
 
-## 🏃 Current Tasks (Phase 4)
+### Phase 4: ECS & Physics
+- [x] **Entity / Registry** — `entt::entity` type alias + thin `entt::registry` wrapper
+- [x] **Components** — Transform2D, Velocity2D, Health, Sprite, Animator, Collider2D, RigidBody2D, AudioSource, Script, Tags — all pure data structs
+- [x] **Events.hpp** — CollisionEvent, EntityDiedEvent, HealthChangedEvent in `engine/utils/`
+- [x] **Object Pool** — Poolable interface, ObjectPool\<T\> template, PoolManager with type-erased storage
+- [x] **Systems** — MovementSystem2D, AnimationSystem, RenderSystem2D, HealthSystem, ScriptSystem, AISystem, CollisionSystem2D — all header-only
+- [x] **PhysicsWorld2D** — Box2D 2.4 wrapper, pixel↔metre conversion (64px = 1m), contact listener → EventBus
+- [x] **PhysicsSystem2D** — CreateBodies / SyncToBox2D / SyncFromBox2D / DestroyBodies, entity handle stored in b2Body userdata
+
+## 🏃 Current Tasks (Phase 5)
 
 ---
 

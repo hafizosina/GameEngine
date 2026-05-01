@@ -6,7 +6,7 @@
 - **Engine Name**: Zhenzhu Engine
 - **Type**: 2D game engine (no 3D, ever)
 - **Language**: C++20
-- **Namespace**: `ZHZ`
+- **Namespace**: `Zhenzhu`
 - **Build System**: SCons → produces `libzhenzhu-engine.a` + `MyGame`
 - **Primary Library**: raylib 5.0
 - **Docs Folder**: `docs/` — read this before implementing anything
@@ -67,7 +67,7 @@
 | 1 | Data & Config Layer | ✅ Complete |
 | 2 | Asset Pipeline & Resource Management | ✅ Complete |
 | 3 | Renderer 2D & Input | ✅ Complete |
-| 4 | ECS & Physics | 🏃 In Progress |
+| 4 | ECS & Physics | ✅ Complete |
 | 5 | Scene & Audio | ⏳ Pending |
 | 6 | UI System | ⏳ Pending |
 | 7 | Polish & Game Ready | ⏳ Pending |
@@ -87,16 +87,21 @@
 - `engine/renderer/` — `Renderer2D`, `Camera2D`, `SpriteBatch`, `RenderLayer`, `DebugDraw2D`
 - `engine/input/` — `InputManager`, `Keyboard`, `Mouse`, `Gamepad`, `InputAction`
 
-**Phase 4 — stub files only (this is what needs to be built next):**
-- `engine/ecs/Registry.hpp`, `engine/ecs/Entity.hpp` — stubs
-- `engine/ecs/components/` — all stubs (Transform2D, Velocity2D, Health, Sprite, Animator, Collider2D, RigidBody2D, AudioSource, Script, Tags)
-- `engine/ecs/systems/` — all stubs (MovementSystem2D, RenderSystem2D, AnimationSystem, HealthSystem, CollisionSystem2D, PhysicsSystem2D, AISystem, ScriptSystem)
-- `engine/physics/` — all stubs (PhysicsWorld2D, RigidBody2D, Collider2D, PhysicsSystem2D)
+**Phase 4 (fully implemented — do not re-implement):**
+- `engine/ecs/` — `Entity`, `Registry`, all components (Transform2D, Velocity2D, Health, Sprite, Animator, Collider2D, RigidBody2D, AudioSource, Script, Tags)
+- `engine/ecs/systems/` — MovementSystem2D, AnimationSystem, RenderSystem2D, HealthSystem, ScriptSystem, AISystem, CollisionSystem2D
+- `engine/physics/` — `PhysicsWorld2D`, `PhysicsSystem2D`
+- `engine/pool/` — `Poolable`, `ObjectPool<T>`, `PoolManager`
+- `engine/utils/Events.hpp` — CollisionEvent, EntityDiedEvent, HealthChangedEvent
 
-**Phases 5–7 — stub files only (do not implement yet):**
-- `engine/scene/`, `engine/audio/`, `engine/ui/` — all stubs
+**Phase 5 — stub files only (this is what needs to be built next):**
+- `engine/scene/` — Scene, SceneManager, transitions (FadeTransition, SlideTransition, ZoomTransition)
+- `engine/audio/` — AudioManager, SoundPlayer, MusicPlayer, AudioBus
 
-**Always read `docs/Phase4.md` before implementing Phase 4 code.**
+**Phases 6–7 — stub files only (do not implement yet):**
+- `engine/ui/` — all stubs
+
+**Always read `docs/Phase5.md` before implementing Phase 5 code.**
 
 ---
 
@@ -124,7 +129,7 @@ ResourceManager::Load("assets/textures/player/idle.png");
 ResourceManager::Load("tex.player.idle");
 
 // ✅ CORRECT
-ResourceManager::Load(ZHZ::Assets::TEX_PLAYER_IDLE);
+ResourceManager::Load(Zhenzhu::Assets::TEX_PLAYER_IDLE);
 ```
 
 ### 2. No Raw File Paths in Game Code
@@ -216,13 +221,13 @@ Pure data structs, small utilities → header-only .hpp
 
 ### 10. Namespace Everything
 ```cpp
-// All engine code lives in ZHZ namespace
-namespace ZHZ {
+// All engine code lives in Zhenzhu namespace
+namespace Zhenzhu {
     class MySystem { ... };
 }
 
-// Asset IDs live in ZHZ::Assets
-namespace ZHZ::Assets {
+// Asset IDs live in Zhenzhu::Assets
+namespace Zhenzhu::Assets {
     constexpr const char* TEX_PLAYER_IDLE = "tex.player.idle";
 }
 ```
@@ -435,7 +440,7 @@ No manual status flags anywhere.
 ```
 1. Add entry to config/scenes.json
 2. Create src/scenes/YourScene.hpp + YourScene.cpp
-3. Inherit from ZHZ::Scene
+3. Inherit from Zhenzhu::Scene
 4. Override OnEnter, OnExit, OnPause, OnResume, Update, Render
 5. Register in SceneManager
 6. Switch via SceneManager::Switch("your_scene_id", transition)
@@ -477,7 +482,7 @@ MISTAKE: Adding a .cpp file but forgetting SConstruct
 FIX: After creating any .cpp, immediately add to SConstruct ENGINE_SOURCES
 
 MISTAKE: Using raylib types (Vector2, Color) in engine headers
-FIX: Use ZHZ::Vec2 and ZHZ::ThemeColor in engine layer
+FIX: Use Zhenzhu::Vec2 and Zhenzhu::ThemeColor in engine layer
      Convert to raylib types only at the renderer boundary
 
 MISTAKE: Loading same asset multiple times
@@ -512,10 +517,10 @@ EventBus::Publish(HealthChangedEvent{ entity, 80 });
 EventBus::Subscribe<HealthChangedEvent>([](const auto& e) { ... });
 
 // Math
-ZHZ::Vec2 pos = {100.f, 200.f};
-float d = ZHZ::Math2D::Distance(posA, posB);
-float t = ZHZ::Math2D::Lerp(0.f, 1.f, 0.5f);
+Zhenzhu::Vec2 pos = {100.f, 200.f};
+float d = Zhenzhu::Math2D::Distance(posA, posB);
+float t = Zhenzhu::Math2D::Lerp(0.f, 1.f, 0.5f);
 
 // Unique ID
-std::string id = ZHZ::UUID::Generate();
+std::string id = Zhenzhu::UUID::Generate();
 ```

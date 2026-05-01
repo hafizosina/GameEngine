@@ -31,6 +31,7 @@ public:
     // Text
     void DrawText(Font font, const std::string& text,
                   Vec2 pos, float size, float spacing, Color4 color);
+    void DrawTextSimple(const std::string& text, Vec2 pos, int size, Color4 color); // uses default font
 
     // Primitives
     void DrawRect(Rect rect, Color4 color);

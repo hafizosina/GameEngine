@@ -1,6 +1,9 @@
 #pragma once
+#include <entt/entt.hpp>
+
 namespace Zhenzhu {
-class Entity {
-    // Stub
-};
+
+using Entity = entt::entity;
+inline constexpr Entity NullEntity = entt::null;
+
 } // namespace Zhenzhu
