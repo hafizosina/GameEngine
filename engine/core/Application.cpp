@@ -30,7 +30,6 @@ void Application::Init() {
     m_Async.Init();
     m_AssetTracker.Init(&m_Data.assets);
     m_AssetTracker.Report();
-    m_AssetTracker.BakeMissing();
     m_Resources.Init(&m_AssetTracker, &m_Async);
 
     // ── Phase 3 ──────────────────────────────────────

@@ -104,7 +104,7 @@
 - `engine/ui/layout/` — LayoutEngine, FlexLayout, Anchor
 - `engine/ui/widgets/` — UILabel, UIImage, UIPanel, UIButton, UISlider, UIScrollView, UITextInput
 - `engine/ui/UIContext.hpp`, `engine/ui/style/UIStyleSheet.hpp`
-- Phase 6 Baking: `TextureBaker`, `SoundComposer` — integrated into `AssetTracker`
+- Phase 6 Baking: `AssetTracker` now accepts registered baker callbacks (no hardcoded bakers)
 
 **Phase 7 (fully implemented — do not re-implement):**
 - `SConstruct` — `debug=0/1` flag for release / debug builds
@@ -113,8 +113,11 @@
 - `engine/core/Application` — F1/F2/F3/F5 debug hotkeys + hot reload
 - `engine/physics/PhysicsSystem2D` — Box2D shape leak fixed (unique_ptr per entity)
 - `engine/scene/Scene.hpp` — `virtual Registry* GetRegistry()` for debug overlay
-- `engine/assets/AssetIDs.hpp` — TEX_ENEMY, TEX_BULLET, TEX_PARTICLE, TEX_BG_GAME, SFX_SHOOT/HIT/DEATH, BGM_GAME
 - `engine/ecs/components/Tags.hpp` — IsBullet, IsParticle
+- `src/assets/AssetIDs.hpp` — all game asset ID constants (game-layer, edit freely)
+- `src/dev/TextureBaker` — game-provided texture placeholder generator
+- `src/dev/SoundComposer` — game-provided sound placeholder generator
+- `src/scenes/SplashScene` — registers bakers, calls BakeMissing(), transitions to MainMenu
 - `src/factories/` — PlayerFactory, EnemyFactory, BulletFactory, ParticleFactory (all header-only)
 - `src/ui/GameHUD.hpp` — UICanvas subclass with live HP display
 - `src/scenes/PauseScene` — overlay pushed on GameScene; Resume/Quit
@@ -378,13 +381,14 @@ Every frame, in this exact order:
 ## Asset Status Flow
 
 ```
-MISSING     → needs baking (Phase 6 TextureBaker/SoundComposer)
+MISSING     → needs baking; SplashScene calls BakeMissing() with registered bakers
 PLACEHOLDER → baked file exists in assets/placeholder/
 REAL        → real artist file exists in assets/textures/ etc
 
 AssetTracker auto-detects status by checking disk.
 Status is re-scanned on every engine startup.
 No manual status flags anywhere.
+Baker callbacks registered by game code (src/scenes/SplashScene.cpp).
 ```
 
 ---
@@ -445,9 +449,9 @@ No manual status flags anywhere.
 
 ```
 1. Add entry to config/assets.json
-2. Add constant to engine/assets/AssetIDs.hpp
-3. Write bake function in src/dev/PlaceholderTextures.cpp
-   (if texture) or src/dev/PlaceholderSounds.cpp (if sound)
+2. Add constant to src/assets/AssetIDs.hpp  (game layer — edit freely)
+3. Customise placeholder output in src/dev/TextureBaker.cpp (texture)
+   or src/dev/SoundComposer.cpp (sound) if the default isn't sufficient
 4. Use in code via ResourceManager::Load(Assets::YOUR_ID)
 5. Drop real file in assets/textures/ or assets/sounds/
    when artist delivers — status auto-promotes to REAL

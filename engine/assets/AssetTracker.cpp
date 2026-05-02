@@ -1,8 +1,6 @@
 #include "assets/AssetTracker.hpp"
 #include "data/AssetDB.hpp"
 #include "utils/Logger.hpp"
-#include "assets/TextureBaker.hpp"
-#include "assets/SoundComposer.hpp"
 #include <filesystem>
 
 namespace Zhenzhu {
@@ -95,25 +93,29 @@ void AssetTracker::BakeMissing() {
     auto missing = GetAllMissing();
     if (missing.empty()) return;
 
-    LOG_INFO("AssetTracker: detected " + std::to_string(missing.size()) + " missing assets. Starting baking...");
+    LOG_INFO("AssetTracker: " + std::to_string(missing.size()) + " missing assets — baking...");
 
     bool anyBaked = false;
     for (auto& entry : missing) {
         if (entry.placeholderPath.empty()) continue;
 
         if (entry.type == AssetType::TEXTURE) {
-            if (TextureBaker::BakePlaceholder(entry.id, entry.placeholderPath)) {
-                anyBaked = true;
+            if (m_TextureBaker) {
+                if (m_TextureBaker(entry.id, entry.placeholderPath)) anyBaked = true;
+            } else {
+                LOG_WARN("AssetTracker: no TextureBaker registered — skipping " + entry.id);
             }
         } else if (entry.type == AssetType::SOUND || entry.type == AssetType::MUSIC) {
-            if (SoundComposer::BakePlaceholder(entry.id, entry.placeholderPath)) {
-                anyBaked = true;
+            if (m_SoundBaker) {
+                if (m_SoundBaker(entry.id, entry.placeholderPath)) anyBaked = true;
+            } else {
+                LOG_WARN("AssetTracker: no SoundBaker registered — skipping " + entry.id);
             }
         }
     }
 
     if (anyBaked) {
-        LOG_INFO("AssetTracker: baking finished. Re-scanning...");
+        LOG_INFO("AssetTracker: baking finished — re-scanning...");
         RescanStatus();
     }
 }

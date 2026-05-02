@@ -61,6 +61,10 @@ target_include_directories(zhenzhu-engine PUBLIC
 # ── Game Executable ──────────────────────────────
 set(GAME_SOURCES 
     "src/main.cpp"
+    "src/scenes/SplashScene.cpp"
+    "src/scenes/MainMenuScene.cpp"
+    "src/dev/TextureBaker.cpp"
+    "src/dev/SoundComposer.cpp"
 )
 
 add_executable(MyGame ${GAME_SOURCES})

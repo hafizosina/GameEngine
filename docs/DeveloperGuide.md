@@ -133,7 +133,9 @@ LOG_DEBUG("dt = " + std::to_string(dt));  // stripped in release builds
 }
 ```
 
-### Step 2 — Add constant to `engine/assets/AssetIDs.hpp`
+### Step 2 — Add constant to `src/assets/AssetIDs.hpp`
+
+This file is yours — edit it freely. The engine does not own it.
 
 ```cpp
 namespace Zhenzhu::Assets {
@@ -144,11 +146,28 @@ namespace Zhenzhu::Assets {
 ### Step 3 — Use it
 
 ```cpp
+#include "assets/AssetIDs.hpp"   // resolves to src/assets/AssetIDs.hpp
+
 auto tex = ServiceLocator::Get<ResourceManager>()->LoadTexture(Assets::TEX_MY_SPRITE);
 ```
 
 The engine auto-detects whether the real file exists or falls back to the placeholder. You never
 need to check this yourself.
+
+### Placeholder generation — SplashScene
+
+Missing assets are baked to `assets/placeholder/` during the `SplashScene` by the
+game-provided `TextureBaker` and `SoundComposer` classes in `src/dev/`.
+
+To customise placeholder visuals or sounds, edit those two files. The engine calls them via
+registered callbacks — it has no built-in placeholder logic of its own.
+
+```cpp
+// src/scenes/SplashScene.cpp — already wired
+tracker->RegisterTextureBaker(TextureBaker::BakePlaceholder);
+tracker->RegisterSoundBaker  (SoundComposer::BakePlaceholder);
+tracker->BakeMissing();
+```
 
 ### Asset types
 
@@ -701,30 +720,56 @@ EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
 
 ## 13. Events
 
-The event bus decouples publishers from subscribers.
+The event bus decouples publishers from subscribers. `EventBus` is fully templated — any
+struct can be an event without pre-registration.
+
+### Engine events (read-only — do not edit `engine/utils/Events.hpp`)
+
+These are emitted by engine systems. Subscribe to them from your game code.
+
+| Event | Emitted by | Fields |
+|---|---|---|
+| `CollisionEvent` | PhysicsWorld2D | `entityA`, `entityB`, `point`, `normal` |
+| `EntityDiedEvent` | HealthSystem | `entity` |
+| `HealthChangedEvent` | HealthSystem | `entity`, `current`, `max` |
 
 ```cpp
 #include "utils/EventBus.hpp"
 #include "utils/Events.hpp"
 
-// Built-in events
-EventBus::Publish(HealthChangedEvent{ entity, currentHp, maxHp });
-EventBus::Publish(EntityDiedEvent{ entity });
-
-// Subscribe (returns a handle — keep it alive as long as you need the subscription)
 EventBus::Subscribe<HealthChangedEvent>([](const HealthChangedEvent& e) {
-    // react to hp change
+    // update HUD
 });
 
-// Custom event
-struct LevelCompleteEvent { int level; int score; };
+EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
+    // handle collision
+});
+```
 
+### Custom game events — define in `src/`, no engine edits needed
+
+```cpp
+// src/events/GameEvents.hpp  (create this file yourself)
+#pragma once
+
+struct LevelCompleteEvent { int level; int score; };
+struct CoinCollectedEvent { int total; };
+struct BossDefeatedEvent  {};
+```
+
+```cpp
+// Publishing
+#include "events/GameEvents.hpp"
 EventBus::Publish(LevelCompleteEvent{ 3, 1500 });
+
+// Subscribing
 EventBus::Subscribe<LevelCompleteEvent>([](const LevelCompleteEvent& e) {
     LOG_INFO("Level " + std::to_string(e.level) + " complete!");
 });
+```
 
-// Clear all subscriptions (call in OnExit to prevent dangling callbacks)
+```cpp
+// Clear all subscriptions (call in Scene::OnExit to prevent dangling callbacks)
 EventBus::Clear();
 ```
 
