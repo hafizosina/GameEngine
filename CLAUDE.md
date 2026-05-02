@@ -69,8 +69,8 @@
 | 3 | Renderer 2D & Input | ✅ Complete |
 | 4 | ECS & Physics | ✅ Complete |
 | 5 | Scene & Audio | ✅ Complete |
-| 6 | UI System | 🏃 In Progress |
-| 7 | Polish & Game Ready | ⏳ Pending |
+| 6 | UI System | ✅ Complete |
+| 7 | Polish & Game Ready | ✅ Complete |
 
 ### What is implemented vs. stub
 
@@ -106,10 +106,22 @@
 - `engine/ui/UIContext.hpp`, `engine/ui/style/UIStyleSheet.hpp`
 - Phase 6 Baking: `TextureBaker`, `SoundComposer` — integrated into `AssetTracker`
 
-**Phase 7 — stub files only (do not implement yet):**
-- Polish, debug tooling, game-ready cleanup
+**Phase 7 (fully implemented — do not re-implement):**
+- `SConstruct` — `debug=0/1` flag for release / debug builds
+- `engine/utils/FrameProfiler.hpp` — header-only chrono-based named-sample timer
+- `engine/renderer/DebugDraw2D.hpp` — DrawColliders, DrawAssetStatus, DrawFrameProfile
+- `engine/core/Application` — F1/F2/F3/F5 debug hotkeys + hot reload
+- `engine/physics/PhysicsSystem2D` — Box2D shape leak fixed (unique_ptr per entity)
+- `engine/scene/Scene.hpp` — `virtual Registry* GetRegistry()` for debug overlay
+- `engine/assets/AssetIDs.hpp` — TEX_ENEMY, TEX_BULLET, TEX_PARTICLE, TEX_BG_GAME, SFX_SHOOT/HIT/DEATH, BGM_GAME
+- `engine/ecs/components/Tags.hpp` — IsBullet, IsParticle
+- `src/factories/` — PlayerFactory, EnemyFactory, BulletFactory, ParticleFactory (all header-only)
+- `src/ui/GameHUD.hpp` — UICanvas subclass with live HP display
+- `src/scenes/PauseScene` — overlay pushed on GameScene; Resume/Quit
+- `src/scenes/GameScene` — full game scene wiring all ECS systems
 
 **Always read `docs/Phase6.md` before implementing Phase 6 code.**
+**Always read `docs/Phase7.md` before implementing Phase 7 code.**
 
 ---
 

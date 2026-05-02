@@ -114,16 +114,6 @@
 - [x] **MainMenuScene "Start Game"** wired to GameScene via FadeTransition
 - [x] **Registry::Emplace** fixed to use `decltype(auto)` for empty tag types
 
-## 🏃 Current Tasks (Phase 6)
-
-- [x] Plan written — `docs/Phase6.md`
-- [x] UIContext, UIStyleSheet, Anchor, UITheme
-- [x] UINode base class + LayoutEngine + FlexLayout
-- [x] UIAnimator, UITransition
-- [x] UICanvas (root), UILabel, UIImage, UIPanel
-- [x] UIButton, UISlider, UIScrollView, UITextInput
-- [x] UISystem + Application integration
-
 ---
 
 ## 🛠 System Status

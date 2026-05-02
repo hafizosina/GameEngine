@@ -1,6 +1,6 @@
 # Phase 7 — Polish & Game Ready
 
-**Status**: 🏃 In Progress  
+**Status**: ✅ Complete  
 **Goal**: Engine is complete. Debug tooling wired, release build clean, game-layer stubs deliver a playable GameScene.  
 **Namespace**: `Zhenzhu`
 
@@ -9,22 +9,22 @@
 ## Done When
 
 ```
-□ scons debug=0  compiles clean — DebugDraw2D, FrameProfiler, LOG_DEBUG all stripped
-□ F1 toggles collider wire overlay over all entities with Transform2D + Collider2D
-□ F2 toggles asset status overlay (placeholder / missing counts)
-□ F3 toggles frame profile overlay (per-system update times in ms)
-□ F5 hot-reloads all config JSON files without restarting
-□ Box2D shape memory leak fixed (PhysicsSystem2D::MakeFixture uses unique_ptr)
-□ GameScene runs: player moves with InputAction, camera follows, bullet fires
-□ EnemyFactory creates enemy that seeks the player via Script component
-□ BulletFactory creates bullet entity; auto-destroys after 2 s
-□ ParticleFactory creates short-lived particle entity
-□ GameHUD shows current / max HP, updates live from HealthChangedEvent
-□ ESC in GameScene → PauseScene pushed on top (GameScene paused underneath)
-□ PauseScene: Resume pops back, Quit switches to MainMenuScene
-□ Player death (EntityDiedEvent + IsPlayer) → FadeTransition → MainMenuScene
-□ "Start Game" button in MainMenuScene switches to GameScene
-□ Build compiles clean with zero warnings in both debug and release
+✅ scons debug=0  compiles clean — DebugDraw2D, FrameProfiler, LOG_DEBUG all stripped
+✅ F1 toggles collider wire overlay over all entities with Transform2D + Collider2D
+✅ F2 toggles asset status overlay (placeholder / missing counts)
+✅ F3 toggles frame profile overlay (per-system update times in ms)
+✅ F5 hot-reloads all config JSON files without restarting
+✅ Box2D shape memory leak fixed (PhysicsSystem2D::MakeFixture uses unique_ptr)
+✅ GameScene runs: player moves with InputAction, camera follows, bullet fires
+✅ EnemyFactory creates enemy that seeks the player via Script component
+✅ BulletFactory creates bullet entity; auto-destroys after 2 s
+✅ ParticleFactory creates short-lived particle entity
+✅ GameHUD shows current / max HP, updates live from HealthChangedEvent
+✅ ESC in GameScene → PauseScene pushed on top (GameScene paused underneath)
+✅ PauseScene: Resume pops back, Quit switches to MainMenuScene
+✅ Player death (EntityDiedEvent + IsPlayer) → FadeTransition → MainMenuScene
+✅ "Start Game" button in MainMenuScene switches to GameScene
+✅ Build compiles clean with zero warnings in both debug and release
 ```
 
 ---
