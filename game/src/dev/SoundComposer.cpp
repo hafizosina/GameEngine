@@ -62,27 +62,29 @@ bool SoundComposer::BakeHoverSound(const std::string& assetId, const std::string
     for (unsigned int i = 0; i < frameCount; i++) {
         float t    = (float)i / (float)sampleRate;
         
-        // Very fast decay for the initial "crack", slower for the "body" resonance
-        float env1 = std::exp(-60.0f * t);  // Impact
-        float env2 = std::exp(-15.0f * t);  // Body resonance
+        // 1. Main Hollow Resonance (The "Woody" body)
+        float fBody = 240.0f;
+        float body = std::sin(2.0f * 3.14159265f * fBody * t) * std::exp(-30.0f * t) * 0.5f;
         
-        // Wood resonance frequencies (slightly inharmonic for realism)
-        float f1 = 160.0f; 
-        float f2 = 380.0f;
-        float f3 = 720.0f;
-        
-        float body = 0.5f * std::sin(2.0f * 3.14159265f * f1 * t) * env2 +
-                     0.3f * std::sin(2.0f * 3.14159265f * f2 * t) * env1 +
-                     0.2f * std::sin(2.0f * 3.14159265f * f3 * t) * env1;
-        
-        // Initial impact click (filtered noise)
-        float click = 0.0f;
-        if (t < 0.005f) {
-            click = (((float)rand() / (float)RAND_MAX) * 2.0f - 1.0f) * 0.4f * (1.0f - t/0.005f);
+        // 2. Multi-pulse "Splintering" (The "Snap/Crack" part)
+        float crack = 0.0f;
+        for (int p = 0; p < 4; ++p) {
+            float delay = 0.003f * p;
+            if (t > delay) {
+                float pt = t - delay;
+                float fCrack = 800.0f + p * 400.0f;
+                crack += std::sin(2.0f * 3.14159265f * fCrack * pt) * std::exp(-120.0f * pt) * (0.4f - p * 0.05f);
+            }
         }
-
-        float val = body + click;
-        samples[i] = (short)(val * 32767.0f * 0.7f); // Overall volume normalization
+        
+        // 3. Initial Impact Noise
+        float noise = 0.0f;
+        if (t < 0.01f) {
+            noise = (((float)rand() / (float)RAND_MAX) * 2.0f - 1.0f) * 0.3f * (1.0f - t/0.01f);
+        }
+        
+        float val = body + crack + noise;
+        samples[i] = (short)(val * 32767.0f * 0.6f);
     }
 
     Wave wave = {};
