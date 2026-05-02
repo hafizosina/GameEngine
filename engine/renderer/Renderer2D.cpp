@@ -41,7 +41,12 @@ void Renderer2D::SetClearColor(Color4 color) {
 }
 
 void Renderer2D::DrawSprite(Texture2D tex, Vec2 pos, Color4 tint) {
-    DrawTexture(tex, (int)pos.x, (int)pos.y, ToRL(tint));
+    ::DrawTexture(tex, (int)pos.x, (int)pos.y, ToRL(tint));
+}
+
+void Renderer2D::DrawTexture(Texture2D tex, Rect dest, Color4 tint) {
+    Rect src = { 0, 0, (float)tex.width, (float)tex.height };
+    ::DrawTexturePro(tex, ToRL(src), ToRL(dest), { 0, 0 }, 0.0f, ToRL(tint));
 }
 
 void Renderer2D::DrawSpriteEx(Texture2D tex, Rect src, Vec2 pos,

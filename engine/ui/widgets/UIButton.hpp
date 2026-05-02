@@ -13,6 +13,9 @@ public:
     void Render(const UIContext& ctx) override;
 
     std::string           label;
+    std::string           textureNormal;
+    std::string           textureHover;
+    std::string           texturePressed;
     std::function<void()> onClick;
     UIAnimator            animator;
 

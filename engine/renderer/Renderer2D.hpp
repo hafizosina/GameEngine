@@ -21,6 +21,8 @@ public:
     // Sprites
     void DrawSprite(Texture2D tex, Vec2 pos,
                     Color4 tint = {255, 255, 255, 255});
+    void DrawTexture(Texture2D tex, Rect dest,
+                     Color4 tint = {255, 255, 255, 255});
     void DrawSpriteEx(Texture2D tex, Rect src, Vec2 pos, Vec2 origin,
                       float rotation, float scale,
                       Color4 tint = {255, 255, 255, 255});

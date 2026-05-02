@@ -10,7 +10,8 @@ public:
     void Update(const UIContext& ctx, float dt) override;
     void Render(const UIContext& ctx) override;
 
-    Color4     backgroundColor = {0,0,0,0};   // a==0 → theme Surface
+    Color4      backgroundColor   = {0,0,0,0};   // a==0 → theme Surface
+    std::string backgroundTexture = "";
     bool       drawBorder      = false;
     Color4     borderColor     = {255, 255, 255, 80};
     float      borderThick     = 1.f;

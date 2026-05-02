@@ -1,6 +1,8 @@
 #include "ui/widgets/UIButton.hpp"
 #include "ui/style/UITheme.hpp"
 #include "input/InputManager.hpp"
+#include "renderer/Renderer2D.hpp"
+#include "resources/ResourceManager.hpp"
 
 namespace Zhenzhu {
 
@@ -38,12 +40,22 @@ void UIButton::Update(const UIContext& ctx, float dt) {
 void UIButton::Render(const UIContext& ctx) {
     if (!visible) return;
 
-    // 1. Determine background color
+    // 1. Determine background color or texture
     Color4 bg;
+    std::string currentAsset;
     switch (m_State) {
-        case BtnState::Hovered: bg = ctx.theme->PrimaryHover(); break;
-        case BtnState::Pressed: bg = ctx.theme->PrimaryPress(); break;
-        default:                bg = ctx.theme->Primary();      break;
+        case BtnState::Hovered: 
+            bg = ctx.theme->PrimaryHover(); 
+            currentAsset = textureHover;
+            break;
+        case BtnState::Pressed: 
+            bg = ctx.theme->PrimaryPress(); 
+            currentAsset = texturePressed;
+            break;
+        default:                
+            bg = ctx.theme->Primary();      
+            currentAsset = textureNormal;
+            break;
     }
 
     // 2. Handle scaling animation
@@ -57,7 +69,12 @@ void UIButton::Render(const UIContext& ctx) {
     }
 
     // 3. Draw
-    ctx.renderer->DrawRect(drawRect, bg);
+    if (!currentAsset.empty()) {
+        Texture2D tex = ctx.resources->LoadTexture(currentAsset);
+        ctx.renderer->DrawTexture(tex, drawRect);
+    } else {
+        ctx.renderer->DrawRect(drawRect, bg);
+    }
 
     // 4. Draw Label
     if (!label.empty()) {
