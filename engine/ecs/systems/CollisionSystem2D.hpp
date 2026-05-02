@@ -16,7 +16,7 @@ public:
         auto triggers = reg.View<Transform2D, Collider2D, IsTrigger>();
         auto others   = reg.View<Transform2D, Collider2D>();
 
-        for (auto [trigEnt, trigT, trigC, _] : triggers.each()) {
+        for (auto [trigEnt, trigT, trigC] : triggers.each()) {
             for (auto [othEnt, othT, othC] : others.each()) {
                 if (trigEnt == othEnt) continue;
                 if (Overlaps(trigT, trigC, othT, othC))
