@@ -1,4 +1,6 @@
 #include "ui/UISystem.hpp"
+#include "audio/AudioManager.hpp"
+#include "core/ServiceLocator.hpp"
 #include "utils/Logger.hpp"
 
 namespace Zhenzhu {
@@ -18,6 +20,7 @@ UIContext UISystem::MakeContext(Renderer2D* renderer, InputManager* input) const
         .renderer  = renderer,
         .input     = input,
         .resources = m_RM,
+        .audio     = ServiceLocator::Get<AudioManager>(),
         .theme     = &m_Theme
     };
 }

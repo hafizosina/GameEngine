@@ -3,6 +3,7 @@
 #include "input/InputManager.hpp"
 #include "renderer/Renderer2D.hpp"
 #include "resources/ResourceManager.hpp"
+#include "audio/AudioManager.hpp"
 
 namespace Zhenzhu {
 
@@ -20,10 +21,18 @@ void UIButton::Update(const UIContext& ctx, float dt) {
     bool released = ctx.input->GetMouse().IsButtonReleased(MOUSE_BUTTON_LEFT);
 
     if (hovered) {
+        if (m_State == BtnState::Normal && !soundHover.empty() && ctx.audio && ctx.resources) {
+            Sound s = ctx.resources->LoadSound(soundHover);
+            ctx.audio->PlaySound(s);
+        }
         m_State = down ? BtnState::Pressed : BtnState::Hovered;
         animator.SetTarget(ctx.theme->HoverScale(), 1.f, ctx.theme->TransitionDur());
         
         if (released && m_PrevDown) {
+            if (!soundClick.empty() && ctx.audio && ctx.resources) {
+                Sound s = ctx.resources->LoadSound(soundClick);
+                ctx.audio->PlaySound(s);
+            }
             if (onClick) onClick();
         }
     } else {

@@ -16,6 +16,8 @@ public:
     std::string           textureNormal;
     std::string           textureHover;
     std::string           texturePressed;
+    std::string           soundHover;
+    std::string           soundClick;
     std::function<void()> onClick;
     UIAnimator            animator;
 
