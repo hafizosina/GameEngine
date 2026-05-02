@@ -25,7 +25,7 @@ namespace Zhenzhu {
 
 class Application {
 public:
-    void Init();
+    void Init(const std::string& gameRoot = "");
     void Run();
     void Shutdown();
 

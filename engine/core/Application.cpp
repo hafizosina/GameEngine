@@ -8,12 +8,12 @@
 
 namespace Zhenzhu {
 
-void Application::Init() {
+void Application::Init(const std::string& gameRoot) {
     Logger::Init("engine.log");
     LOG_INFO("=== Zhenzhu Engine ===");
 
     // ── Phase 1: Data first ──────────────────────────
-    m_Data.Init();
+    m_Data.Init(gameRoot);
 
     // ── Window reads from SettingsDB ─────────────────
     auto& s = m_Data.settings;

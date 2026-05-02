@@ -16,7 +16,7 @@ else:
 # Include directories
 env.Append(CPPPATH=[
     'engine',
-    'src',
+    'game/src',
     '.',
     'vendor/nlohmann_json/single_include',
     'vendor/entt/src',
@@ -42,7 +42,7 @@ if env['PLATFORM'] == 'posix' or env['PLATFORM'] == 'darwin':
 # ── Build Setup ──────────────────────────────────
 # Redirect all compiled objects to build/ directory
 env.VariantDir('build/engine', 'engine', duplicate=0)
-env.VariantDir('build/src',    'src',    duplicate=0)
+env.VariantDir('build/game/src', 'game/src', duplicate=0)
 
 engine_src = (
     Glob('build/engine/core/*.cpp') +
@@ -63,7 +63,7 @@ engine_src = (
     Glob('build/engine/ui/animation/*.cpp') +
     Glob('build/engine/ui/widgets/*.cpp')
 )
-game_src   = Glob('build/src/*.cpp') + Glob('build/src/*/*.cpp')
+game_src   = Glob('build/game/src/*.cpp') + Glob('build/game/src/*/*.cpp')
 
 # Build the engine as a static library in build/
 engine_lib = env.StaticLibrary('build/zhenzhu-engine', engine_src)

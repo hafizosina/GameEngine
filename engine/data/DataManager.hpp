@@ -22,15 +22,20 @@ public:
     AssetDB      assets;
     SceneDB      scenes;
 
-    void Init() {
-        LOG_INFO("DataManager: loading all config files...");
+    void Init(const std::string& gameRoot = "") {
+        LOG_INFO("DataManager: initializing for game root: " + (gameRoot.empty() ? "." : gameRoot));
 
-        Load("config/settings.json",    [&](const Json& j){ settings.Init(j);    });
-        Load("config/keybinds.json",    [&](const Json& j){ keybinds.Init(j);    });
-        Load("config/ui_theme.json",    [&](const Json& j){ theme.Init(j);       });
-        Load("config/game_config.json", [&](const Json& j){ gameConfig.Init(j);  });
-        Load("config/assets.json",      [&](const Json& j){ assets.Init(j);      });
-        Load("config/scenes.json",      [&](const Json& j){ scenes.Init(j);      });
+        auto configPath = [&](const std::string& file) {
+            std::string dir = gameRoot.empty() ? "config" : gameRoot + "/config";
+            return dir + "/" + file;
+        };
+
+        Load(configPath("settings.json"),    [&](const Json& j){ settings.Init(j);    });
+        Load(configPath("keybinds.json"),    [&](const Json& j){ keybinds.Init(j);    });
+        Load(configPath("ui_theme.json"),    [&](const Json& j){ theme.Init(j);       });
+        Load(configPath("game_config.json"), [&](const Json& j){ gameConfig.Init(j);  });
+        Load(configPath("assets.json"),      [&](const Json& j){ assets.Init(j, gameRoot); }); // Use gameRoot for assets
+        Load(configPath("scenes.json"),      [&](const Json& j){ scenes.Init(j);      });
 
         LOG_INFO("DataManager: all config loaded ✓");
     }

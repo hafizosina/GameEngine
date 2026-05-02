@@ -5,7 +5,7 @@
 
 int main() {
     Zhenzhu::Application app;
-    app.Init();
+    app.Init("game");
 
     Zhenzhu::ServiceLocator::Get<Zhenzhu::SceneManager>()
         ->Switch(std::make_unique<Zhenzhu::SplashScene>());

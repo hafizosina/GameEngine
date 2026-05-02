@@ -50,7 +50,7 @@ add_library(zhenzhu-engine STATIC ${ENGINE_SOURCES})
 
 target_include_directories(zhenzhu-engine PUBLIC
     "engine"
-    "src"
+    "game/src"
     "${JSON_INCLUDE_DIR}"
     "${ENTT_INCLUDE_DIR}"
     "${SPDLOG_INCLUDE_DIR}"
@@ -60,11 +60,11 @@ target_include_directories(zhenzhu-engine PUBLIC
 
 # ── Game Executable ──────────────────────────────
 set(GAME_SOURCES 
-    "src/main.cpp"
-    "src/scenes/SplashScene.cpp"
-    "src/scenes/MainMenuScene.cpp"
-    "src/dev/TextureBaker.cpp"
-    "src/dev/SoundComposer.cpp"
+    "game/src/main.cpp"
+    "game/src/scenes/SplashScene.cpp"
+    "game/src/scenes/MainMenuScene.cpp"
+    "game/src/dev/TextureBaker.cpp"
+    "game/src/dev/SoundComposer.cpp"
 )
 
 add_executable(MyGame ${GAME_SOURCES})

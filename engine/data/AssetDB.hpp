@@ -10,18 +10,23 @@ namespace Zhenzhu {
 
 class AssetDB {
 public:
-    void Init(const Json& j) {
+    void Init(const Json& j, const std::string& rootPath = "") {
         if (!j.contains("assets") || !j["assets"].is_array()) {
             LOG_WARN("AssetDB: no assets array in JSON");
             return;
         }
 
+        auto fixPath = [&](const std::string& p) {
+            if (p.empty() || rootPath.empty()) return p;
+            return rootPath + "/" + p;
+        };
+
         for (const auto& item : j["assets"]) {
             AssetEntry entry;
             entry.id = item.value("id", "");
             entry.type = parseType(item.value("type", "DATA"));
-            entry.realPath = item.value("real", "");
-            entry.placeholderPath = item.value("placeholder", "");
+            entry.realPath = fixPath(item.value("real", ""));
+            entry.placeholderPath = fixPath(item.value("placeholder", ""));
             entry.status = AssetStatus::MISSING;
 
             if (!entry.id.empty()) {
@@ -29,7 +34,7 @@ public:
             }
         }
 
-        LOG_INFO("AssetDB: loaded " + std::to_string(m_Entries.size()) + " assets");
+        LOG_INFO("AssetDB: loaded " + std::to_string(m_Entries.size()) + " assets (root: " + rootPath + ")");
     }
 
     const AssetEntry* GetEntry(const std::string& id) const {
