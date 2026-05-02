@@ -32,7 +32,7 @@ bool SoundComposer::BakePlaceholder(const std::string& assetId, const std::strin
         samples[i] = (short)(val * 32767.0f);
     }
 
-    Wave wave = {0};
+    Wave wave = {};
     wave.frameCount = frameCount;
     wave.sampleRate = sampleRate;
     wave.sampleSize = 16;

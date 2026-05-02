@@ -12,7 +12,7 @@ public:
     void   Clear()               { m_Reg.clear(); }
 
     template<typename T, typename... Args>
-    T& Emplace(Entity e, Args&&... args) {
+    decltype(auto) Emplace(Entity e, Args&&... args) {
         return m_Reg.emplace<T>(e, std::forward<Args>(args)...);
     }
 

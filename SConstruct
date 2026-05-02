@@ -5,8 +5,13 @@ env = Environment()
 # C++ Standard and Compiler flags
 env.Append(CXXFLAGS=['-std=c++20', '-Wall', '-Wextra', '-Wpedantic'])
 
-# Debug flag
-env.Append(CPPDEFINES=['ENGINE_DEBUG'])
+# Debug / Release flag  —  scons debug=0  for release
+debug = ARGUMENTS.get('debug', '1') == '1'
+if debug:
+    env.Append(CPPDEFINES=['ENGINE_DEBUG'])
+    env.Append(CXXFLAGS=['-g'])
+else:
+    env.Append(CXXFLAGS=['-O2', '-DNDEBUG'])
 
 # Include directories
 env.Append(CPPPATH=[

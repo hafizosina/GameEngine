@@ -47,6 +47,54 @@
       "type":        "MUSIC",
       "real":        "assets/sounds/bgm/menu.ogg",
       "placeholder": ""
+    },
+    {
+      "id":          "tex.enemy",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/enemy/idle.png",
+      "placeholder": "assets/placeholder/enemy_idle.png"
+    },
+    {
+      "id":          "tex.bullet",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/fx/bullet.png",
+      "placeholder": "assets/placeholder/bullet.png"
+    },
+    {
+      "id":          "tex.particle",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/fx/particle.png",
+      "placeholder": "assets/placeholder/particle.png"
+    },
+    {
+      "id":          "tex.bg.game",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/bg/game_bg.png",
+      "placeholder": "assets/placeholder/bg_game.png"
+    },
+    {
+      "id":          "sfx.shoot",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/shoot.wav",
+      "placeholder": "assets/placeholder/sfx_shoot.wav"
+    },
+    {
+      "id":          "sfx.hit",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/hit.wav",
+      "placeholder": "assets/placeholder/sfx_hit.wav"
+    },
+    {
+      "id":          "sfx.player.death",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/player_death.wav",
+      "placeholder": "assets/placeholder/sfx_player_death.wav"
+    },
+    {
+      "id":          "bgm.game",
+      "type":        "MUSIC",
+      "real":        "assets/sounds/bgm/game.ogg",
+      "placeholder": ""
     }
   ]
 }

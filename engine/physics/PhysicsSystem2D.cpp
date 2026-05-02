@@ -5,6 +5,7 @@
 #include "utils/Logger.hpp"
 #include <box2d/box2d.h>
 #include <cmath>
+#include <memory>
 
 namespace Zhenzhu {
 
@@ -28,6 +29,7 @@ void PhysicsSystem2D::Init(Registry* reg, PhysicsWorld2D* world) {
 
 void PhysicsSystem2D::Shutdown() {
     m_Bodies.clear();
+    m_Shapes.clear();
     LOG_INFO("PhysicsSystem2D shutdown");
 }
 
@@ -56,7 +58,7 @@ void PhysicsSystem2D::CreateBodies() {
         b2Body* body = m_World->CreateBody(def);
         body->GetUserData().pointer = (uintptr_t)entity;
 
-        b2FixtureDef fix = MakeFixture(col, rb);
+        b2FixtureDef fix = MakeFixture(entity, col, rb);
         body->CreateFixture(&fix);
 
         m_Bodies[entity] = body;
@@ -67,6 +69,7 @@ void PhysicsSystem2D::DestroyBodies() {
     for (auto it = m_Bodies.begin(); it != m_Bodies.end(); ) {
         if (!m_Registry->IsValid(it->first)) {
             m_World->DestroyBody(it->second);
+            m_Shapes.erase(it->first);
             it = m_Bodies.erase(it);
         } else {
             ++it;
@@ -106,31 +109,32 @@ b2BodyType PhysicsSystem2D::ToBox2DType(BodyType t) {
     return b2_staticBody;
 }
 
-b2FixtureDef PhysicsSystem2D::MakeFixture(const Collider2D& col, const RigidBody2D& rb) {
+b2FixtureDef PhysicsSystem2D::MakeFixture(entt::entity entity,
+                                           const Collider2D& col,
+                                           const RigidBody2D& rb) {
     b2FixtureDef fix;
     fix.friction    = rb.friction;
     fix.restitution = rb.restitution;
     fix.isSensor    = col.isTrigger;
 
     if (col.shape == ColliderShape::Box) {
-        auto* shape = new b2PolygonShape();
+        auto shape = std::make_unique<b2PolygonShape>();
         float hw = PhysicsWorld2D::ToMetres(col.size.x * 0.5f);
         float hh = PhysicsWorld2D::ToMetres(col.size.y * 0.5f);
         float ox = PhysicsWorld2D::ToMetres(col.offset.x);
         float oy = PhysicsWorld2D::ToMetres(col.offset.y);
         shape->SetAsBox(hw, hh, {ox, oy}, 0.f);
-        fix.shape = shape;
-        // Note: shape memory leaks here — acceptable for now, refactor in Phase 7
-        // with a shape cache or unique_ptr pool
+        fix.shape = shape.get();
+        m_Shapes[entity].push_back(std::move(shape));
     } else {
-        auto* shape = new b2CircleShape();
-        shape->m_radius   = PhysicsWorld2D::ToMetres(col.size.x);
+        auto shape = std::make_unique<b2CircleShape>();
+        shape->m_radius = PhysicsWorld2D::ToMetres(col.size.x);
         shape->m_p.Set(PhysicsWorld2D::ToMetres(col.offset.x),
                        PhysicsWorld2D::ToMetres(col.offset.y));
-        fix.shape = shape;
+        fix.shape = shape.get();
+        m_Shapes[entity].push_back(std::move(shape));
     }
 
-    // Density derived from mass and shape area (Box2D uses density, not mass)
     fix.density = (rb.mass > 0.f) ? rb.mass : 1.f;
     return fix;
 }

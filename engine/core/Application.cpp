@@ -2,6 +2,8 @@
 #include "ServiceLocator.hpp"
 #include "utils/Logger.hpp"
 #include "renderer/DebugDraw2D.hpp"
+#include "input/Keyboard.hpp"
+#include "scene/Scene.hpp"
 #include <raylib.h>
 
 namespace Zhenzhu {
@@ -96,11 +98,35 @@ void Application::Quit() {
 
 void Application::ProcessInput() {
     m_Input.Update();
+
+#ifdef ENGINE_DEBUG
+    if (Keyboard::IsPressed(KEY_F1)) m_ShowColliders = !m_ShowColliders;
+    if (Keyboard::IsPressed(KEY_F2)) m_ShowAssets    = !m_ShowAssets;
+    if (Keyboard::IsPressed(KEY_F3)) m_ShowProfiler  = !m_ShowProfiler;
+    if (Keyboard::IsPressed(KEY_F5)) {
+        m_Data.Reload("config/settings.json");
+        m_Data.Reload("config/ui_theme.json");
+        m_Data.Reload("config/game_config.json");
+        m_Data.Reload("config/keybinds.json");
+        LOG_INFO("Config hot-reloaded (F5)");
+    }
+#endif
 }
 
 void Application::Update(float dt) {
+#ifdef ENGINE_DEBUG
+    m_Profiler.Reset();
+    m_Profiler.Begin("Audio");
+#endif
     m_Audio.Update();
+#ifdef ENGINE_DEBUG
+    m_Profiler.End("Audio");
+    m_Profiler.Begin("Scene");
+#endif
     m_SceneManager.Update(dt);
+#ifdef ENGINE_DEBUG
+    m_Profiler.End("Scene");
+#endif
 }
 
 void Application::FixedUpdate() {
@@ -115,6 +141,14 @@ void Application::Render() {
 #ifdef ENGINE_DEBUG
         if (m_Data.settings.gameplay.showFPS)
             DebugDraw2D::DrawFPS({10, 10});
+
+        if (m_ShowColliders) {
+            Scene* top = m_SceneManager.Top();
+            Registry* reg = top ? top->GetRegistry() : nullptr;
+            if (reg) DebugDraw2D::DrawColliders(m_Renderer, *reg);
+        }
+        if (m_ShowAssets)   DebugDraw2D::DrawAssetStatus(m_Renderer, m_AssetTracker);
+        if (m_ShowProfiler) DebugDraw2D::DrawFrameProfile(m_Renderer, m_Profiler);
 #endif
 
     m_Renderer.End();

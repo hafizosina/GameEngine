@@ -21,13 +21,14 @@ private:
     void SyncToBox2D();     // push Kinematic Transform2D → b2Body
     void SyncFromBox2D();   // pull Dynamic b2Body → Transform2D
 
-    static b2BodyType  ToBox2DType(BodyType t);
-    static b2FixtureDef MakeFixture(const Collider2D& col, const RigidBody2D& rb);
+    static b2BodyType ToBox2DType(BodyType t);
+    b2FixtureDef MakeFixture(entt::entity entity, const Collider2D& col, const RigidBody2D& rb);
 
     Registry*       m_Registry = nullptr;
     PhysicsWorld2D* m_World    = nullptr;
 
-    std::unordered_map<entt::entity, b2Body*> m_Bodies;
+    std::unordered_map<entt::entity, b2Body*>                         m_Bodies;
+    std::unordered_map<entt::entity, std::vector<std::unique_ptr<b2Shape>>> m_Shapes;
 };
 
 } // namespace Zhenzhu

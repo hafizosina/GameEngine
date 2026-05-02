@@ -14,6 +14,9 @@ public:
     virtual void Update(float dt) = 0;
     virtual void Render()         = 0;
 
+    // Debug overlay: returns the scene's ECS registry (nullptr for UI-only scenes)
+    virtual Registry* GetRegistry() { return &m_Registry; }
+
 protected:
     Registry m_Registry;
 };

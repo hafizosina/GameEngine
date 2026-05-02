@@ -1,6 +1,9 @@
 #include "scenes/MainMenuScene.hpp"
+#include "scenes/GameScene.hpp"
 #include "core/Application.hpp"
 #include "core/ServiceLocator.hpp"
+#include "scene/SceneManager.hpp"
+#include "scene/transitions/FadeTransition.hpp"
 #include "ui/UISystem.hpp"
 #include "ui/widgets/UIPanel.hpp"
 #include "ui/widgets/UILabel.hpp"
@@ -40,7 +43,8 @@ void MainMenuScene::OnEnter() {
     playBtn->size = { 320.f, 50.f };
     playBtn->onClick = []() {
         LOG_INFO("Start Game clicked!");
-        // Future: SceneManager::Get()->Switch(std::make_unique<GameplayScene>(), std::make_unique<FadeTransition>());
+        auto* sm = ServiceLocator::Get<SceneManager>();
+        sm->Switch(std::make_unique<GameScene>(), std::make_unique<FadeTransition>());
     };
 
     auto settingsBtn = std::make_unique<UIButton>("SETTINGS");

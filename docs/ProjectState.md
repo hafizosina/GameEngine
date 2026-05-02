@@ -1,6 +1,6 @@
 # Zhenzhu Engine — Project State
 
-**Current Status**: 🟢 Phase 5 Complete | 🟡 Phase 6 In Progress
+**Current Status**: 🟢 All Phases Complete
 **Build System**: SCons
 **Primary Language**: C++20
 
@@ -17,7 +17,7 @@
 | **Phase 4** | ECS & Physics | ✅ Complete | 100% |
 | **Phase 5** | Scene & Audio | ✅ Complete | 100% |
 | **Phase 6** | UI System | ✅ Complete | 100% |
-| **Phase 7** | Final Polish & Build | ⏳ Pending | 0% |
+| **Phase 7** | Final Polish & Build | ✅ Complete | 100% |
 
 ---
 
@@ -96,6 +96,24 @@
 
 ---
 
+## ✅ Completed Features (Phase 7)
+
+- [x] **SConstruct debug/release flag** — `scons debug=0` for optimised release build
+- [x] **Box2D shape memory leak fixed** — `unique_ptr<b2Shape>` stored per-entity in `m_Shapes`
+- [x] **FrameProfiler** — header-only chrono-based named-sample timer (ENGINE_DEBUG only)
+- [x] **DebugDraw2D extended** — DrawColliders, DrawAssetStatus, DrawFrameProfile
+- [x] **F1/F2/F3 overlay toggles** — collider wire, asset status, frame profile
+- [x] **F5 hot reload** — re-reads all config JSON without restart
+- [x] **Scene::GetRegistry()** — virtual hook for debug collider overlay
+- [x] **8 new asset IDs** — TEX_ENEMY, TEX_BULLET, TEX_PARTICLE, TEX_BG_GAME, SFX_SHOOT/HIT/DEATH, BGM_GAME
+- [x] **IsBullet, IsParticle tags** added to Tags.hpp
+- [x] **PlayerFactory, EnemyFactory, BulletFactory, ParticleFactory** — all header-only
+- [x] **GameHUD** — UICanvas subclass; auto-updates from HealthChangedEvent
+- [x] **PauseScene** — overlay pushed on GameScene; Resume/Quit buttons
+- [x] **GameScene** — full game scene with ECS systems, camera, HUD, ESC pause, death transition
+- [x] **MainMenuScene "Start Game"** wired to GameScene via FadeTransition
+- [x] **Registry::Emplace** fixed to use `decltype(auto)` for empty tag types
+
 ## 🏃 Current Tasks (Phase 6)
 
 - [x] Plan written — `docs/Phase6.md`
@@ -122,4 +140,4 @@
 ---
 
 ## 🐛 Known Issues
-- Box2D shape objects in `PhysicsSystem2D::MakeFixture` leak memory (`new b2PolygonShape` / `new b2CircleShape`) — deferred to Phase 7 cleanup.
+- None. All previously known issues resolved.

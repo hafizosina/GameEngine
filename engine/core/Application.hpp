@@ -18,6 +18,9 @@
 #include "scene/SceneManager.hpp"
 #include "ui/UISystem.hpp"
 
+// Phase 7
+#include "utils/FrameProfiler.hpp"
+
 namespace Zhenzhu {
 
 class Application {
@@ -52,6 +55,12 @@ private:
     AudioManager  m_Audio;
     SceneManager  m_SceneManager;
     UISystem      m_UI;
+
+    // Phase 7 — debug overlays (stripped in release)
+    bool          m_ShowColliders = false;
+    bool          m_ShowAssets    = false;
+    bool          m_ShowProfiler  = false;
+    FrameProfiler m_Profiler;
 
     static inline bool s_Running = false;
 };
