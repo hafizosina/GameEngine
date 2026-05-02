@@ -21,15 +21,16 @@ in `engine/` is read-only.
 5. [Config & Data](#5-config--data)
 6. [Scenes & Transitions](#6-scenes--transitions)
 7. [Entity Component System (ECS)](#7-entity-component-system-ecs)
-8. [Input](#8-input)
-9. [Rendering & Camera](#9-rendering--camera)
-10. [Audio](#10-audio)
-11. [UI System](#11-ui-system)
-12. [Physics](#12-physics)
-13. [Events](#13-events)
-14. [Async & Object Pooling](#14-async--object-pooling)
-15. [Debug Tools](#15-debug-tools)
-16. [Rules Cheat Sheet](#16-rules-cheat-sheet)
+8. [FSM (Finite State Machine)](#8-fsm-finite-state-machine)
+9. [Input](#9-input)
+10. [Rendering & Camera](#10-rendering--camera)
+11. [Audio](#11-audio)
+12. [UI System](#12-ui-system)
+13. [Physics](#13-physics)
+14. [Events](#14-events)
+15. [Async & Object Pooling](#15-async--object-pooling)
+16. [Debug Tools](#16-debug-tools)
+17. [Rules Cheat Sheet](#17-rules-cheat-sheet)
 
 ---
 
@@ -469,7 +470,68 @@ m_RenderSys.Render(m_Registry, *renderer);
 
 ---
 
-## 8. Input
+## 8. FSM (Finite State Machine)
+
+Use the `FiniteStateMachine` component for complex entity behavior (AI, boss patterns, stateful interactables). It replaces large if/else blocks and keeps AI logic out of the `Script` component.
+
+### When to use FSM vs Script
+- **Script**: One-shot lifetime events (auto-destroy timers, simple flags).
+- **FSM**: Anything with multiple modes (Idle, Chase, Attack, Flee).
+
+### Key Types
+- `StateID`: A simple integer representing a state.
+- `FSMAction`: `void(entt::registry&, Entity, float dt)` — Called on `onEnter`, `onUpdate`, `onExit`.
+- `FSMCondition`: `bool(entt::registry&, Entity, float dt)` — Returns true to trigger a transition.
+
+### Defining an FSM (Example)
+```cpp
+#include "ecs/components/FiniteStateMachine.hpp"
+
+FiniteStateMachine fsm;
+
+// 1. Add States
+fsm.AddState({ State::IDLE, "Idle",
+    [](entt::registry& r, Entity e, float) { r.get<Velocity2D>(e).linear = {0,0}; }, // onEnter
+    nullptr, // onUpdate
+    nullptr  // onExit
+});
+
+fsm.AddState({ State::CHASE, "Chase",
+    nullptr,
+    [](entt::registry& r, Entity e, float dt) { /* move toward player */ },
+    nullptr
+});
+
+// 2. Add Transitions (Insertion order = Evaluation priority)
+fsm.AddTransition({ State::IDLE, State::CHASE,
+    [](entt::registry& r, Entity e, float) {
+        return Math2D::Distance(myPos, playerPos) < aggroRange;
+    }
+});
+
+reg.Emplace<FiniteStateMachine>(entity, std::move(fsm));
+```
+
+### Wiring the System
+Add `FSMSystem` to your scene and call it **before** the movement system.
+```cpp
+m_FSMSystem.Update(m_Registry, dt);      // 1. Decide new velocity
+m_MoveSys.Update(m_Registry, dt);        // 2. Apply velocity
+```
+
+### Tips
+- **Hysteresis**: Make "leave range" slightly larger (e.g. 1.2x) than "enter range" to prevent flickering.
+- **Evaluation Order**: Transitions are checked in the order they were added.
+- **Global Transitions**: Use `from = FSM_NULL_STATE` for transitions that can fire from any state (e.g. Low HP → Flee).
+
+| System | Role |
+|---|---|
+| **FSM** | Which *mode* is the entity in? |
+| **UtilityAI** | Which *action* within that mode? (Planned) |
+
+---
+
+## 9. Input
 
 ### Checking named actions (preferred)
 
@@ -503,7 +565,7 @@ bool leftBtn  = input->GetMouse().IsDown(MOUSE_BUTTON_LEFT);
 
 ---
 
-## 9. Rendering & Camera
+## 10. Rendering & Camera
 
 ### Drawing (inside Render())
 
@@ -569,7 +631,7 @@ Vec2 screenPos = m_Camera.WorldToScreen(entityWorldPos);
 
 ---
 
-## 10. Audio
+## 11. Audio
 
 ```cpp
 #include "audio/AudioManager.hpp"
@@ -603,7 +665,7 @@ audio->UnmuteBus("sfx");
 
 ---
 
-## 11. UI System
+## 12. UI System
 
 ### Building a UI in a scene
 
@@ -703,7 +765,7 @@ private:
 
 ---
 
-## 12. Physics
+## 13. Physics
 
 Physics is driven by Box2D under the hood. You never call Box2D directly.
 
@@ -773,7 +835,7 @@ EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
 
 ---
 
-## 13. Events
+## 14. Events
 
 The event bus decouples publishers from subscribers. `EventBus` is fully templated — any
 struct can be an event without pre-registration.
@@ -830,7 +892,7 @@ EventBus::Clear();
 
 ---
 
-## 14. Async & Object Pooling
+## 15. Async & Object Pooling
 
 ### Async asset loading
 
@@ -868,7 +930,7 @@ Objects in a pool must inherit from `Poolable` and implement `Reset()` and `OnRe
 
 ---
 
-## 15. Debug Tools
+## 16. Debug Tools
 
 Debug tools are only active in debug builds (`scons`). They compile to no-ops in release
 (`scons debug=0`), so you can leave them in scene code freely.
@@ -911,7 +973,7 @@ DebugDraw2D::DrawFPS(*renderer);                           // FPS counter
 
 ---
 
-## 16. Rules Cheat Sheet
+## 17. Rules Cheat Sheet
 
 | Rule | Do this | Not this |
 |---|---|---|
@@ -933,12 +995,13 @@ DebugDraw2D::DrawFPS(*renderer);                           // FPS counter
 | Task | Section |
 |---|---|
 | Spawn an enemy | [§7 Factories](#factories--preferred-pattern-for-spawning) |
-| React to player death | [§13 Events](#13-events) |
+| React to player death | [§14 Events](#14-events) |
 | Add a pause menu | [§6 Scenes & Transitions](#6-scenes--transitions) |
-| Show HP in the HUD | [§11 UICanvas subclass](#uicanvas-subclass-for-custom-huds) |
+| Show HP in the HUD | [§12 UICanvas subclass](#uicanvas-subclass-for-custom-huds) |
 | Read a config value at runtime | [§5 Config & Data](#5-config--data) |
-| Play a sound on hit | [§10 Audio](#10-audio) |
-| Make the camera shake | [§9 Rendering & Camera](#9-rendering--camera) |
+| Play a sound on hit | [§11 Audio](#11-audio) |
+| Make the camera shake | [§10 Rendering & Camera](#10-rendering--camera) |
 | Auto-destroy a bullet after 2 s | [§7 Script component](#script-component--per-entity-behaviour) |
-| Load a texture without blocking | [§14 Async & Object Pooling](#14-async--object-pooling) |
-| Draw a debug collider overlay | [§15 Debug Tools](#15-debug-tools) |
+| Load a texture without blocking | [§15 Async & Object Pooling](#15-async--object-pooling) |
+| Draw a debug collider overlay | [§16 Debug Tools](#16-debug-tools) |
+| Complex AI behavior | [§8 FSM](#8-fsm-finite-state-machine) |

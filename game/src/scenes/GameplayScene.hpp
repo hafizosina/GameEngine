@@ -4,6 +4,7 @@
 #include "ecs/systems/MovementSystem2D.hpp"
 #include "ecs/systems/CollisionSystem2D.hpp"
 #include "ecs/components/Tags.hpp"
+#include "ecs/systems/FSMSystem.hpp"
 #include "pool/ObjectPool.hpp"
 #include <vector>
 
@@ -50,6 +51,7 @@ private:
     RenderSystem2D    m_RenderSystem;
     MovementSystem2D  m_MovementSystem;
     CollisionSystem2D m_CollisionSystem;
+    FSMSystem         m_FSMSystem;
 
     ObjectPool<Bullet> m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;

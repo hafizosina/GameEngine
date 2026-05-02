@@ -74,6 +74,7 @@
 | 5 | Scene & Audio | ✅ Complete |
 | 6 | UI System | ✅ Complete |
 | 7 | Polish & Game Ready | ✅ Complete |
+| 8 | AI Framework (FSM) | ✅ Phase 8A Complete |
 
 ### What is implemented vs. stub
 
@@ -123,6 +124,13 @@
 - `game/src/scenes/SplashScene` — registers bakers, calls BakeMissing(), transitions to MainMenu
 - `game/src/scenes/MainMenuScene` — main menu with UICanvas and scene transition
 - `game/src/scenes/GameplayScene` — full game scene with inline custom components, ObjectPool
+
+**Phase 8 (in progress):**
+- `engine/ecs/components/FiniteStateMachine.hpp` — StateID, FSMState, FSMTransition, FiniteStateMachine component
+- `engine/ecs/systems/FSMSystem.hpp` — evaluates transitions, calls onEnter/onUpdate/onExit, auto-enters state[0]
+- `engine/ecs/systems/AISystem.hpp` — updated to skip entities that carry FiniteStateMachine
+- `engine/ecs/components/Contacts.hpp` — high-performance contact tracking (Phase 7 extension)
+- `engine/ecs/systems/CollisionSystem2D.hpp` — updated to use Contacts instead of EventBus (Phase 7 extension)
 
 **Phase docs (Phase0–7.md) have been removed — all phases are complete.**
 **Always read `docs/Phase7.md` before implementing Phase 7 code.**

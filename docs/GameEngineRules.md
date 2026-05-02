@@ -106,6 +106,9 @@ reg.Emplace<Script>(bullet, Script{
 
 Complex AI goes into dedicated engine components: **`UtilityAI`** (scored action selection) or **`FiniteStateMachine`** (state + transition table) — both as new components in `engine/ecs/components/`, with corresponding systems. Do not implement these in Script lambdas.
 
+**✅ Complex AI goes into:** `engine/ecs/components/FiniteStateMachine.hpp` (phase 8A, implemented) — `UtilityAI`, `BehaviorTree`, `GOAP` (planned phases 9A–9C).  
+`engine/ecs/systems/FSMSystem.hpp` evaluates all FSM components once per frame.
+
 ---
 
 ## 8. Physics Ownership — Never Write Transform2D on Dynamic Entities

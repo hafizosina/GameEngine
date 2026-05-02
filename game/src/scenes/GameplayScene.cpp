@@ -98,6 +98,7 @@ void GameplayScene::Update(float dt) {
     }
 
     // 6. Systems Update
+    m_FSMSystem.Update(m_Registry, dt);
     m_MovementSystem.Update(m_Registry, dt);
     m_CollisionSystem.Update(m_Registry);
     HandleCollisions();
