@@ -2,25 +2,43 @@
 #include "ecs/Registry.hpp"
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Collider2D.hpp"
+#include "ecs/components/Contacts.hpp"
 #include "ecs/components/Tags.hpp"
-#include "utils/EventBus.hpp"
-#include "utils/Events.hpp"
 #include "utils/Math2D.hpp"
 
 namespace Zhenzhu {
 
+// Trigger-based broad-phase collision.
+// Writes results into Contacts components — no EventBus, no allocations.
+// Suitable for hundreds of entities per frame (colony sim scale).
+//
+// Call once per frame from Scene::Update() BEFORE game logic reads Contacts.
+//   m_CollisionSystem.Update(m_Registry);
+//
+// Reading contacts in game code:
+//   for (auto [e, contacts] : reg.View<IsTrigger, Contacts>().each()) {
+//       for (int i = 0; i < contacts.count; ++i)
+//           DoSomething(e, contacts.entities[i]);
+//   }
 class CollisionSystem2D {
 public:
-    // Only tests entities tagged IsTrigger against all other collidables
     void Update(Registry& reg) {
+        // Clear contacts from last frame
+        for (auto [e, c] : reg.View<Contacts>().each())
+            c.Clear();
+
         auto triggers = reg.View<Transform2D, Collider2D, IsTrigger>();
         auto others   = reg.View<Transform2D, Collider2D>();
 
         for (auto [trigEnt, trigT, trigC] : triggers.each()) {
             for (auto [othEnt, othT, othC] : others.each()) {
                 if (trigEnt == othEnt) continue;
-                if (Overlaps(trigT, trigC, othT, othC))
-                    EventBus::Publish(CollisionEvent{trigEnt, othEnt, {}, {}});
+                if (!Overlaps(trigT, trigC, othT, othC)) continue;
+
+                // Lazy-emplace Contacts on the trigger entity
+                if (!reg.Has<Contacts>(trigEnt))
+                    reg.Emplace<Contacts>(trigEnt);
+                reg.Get<Contacts>(trigEnt).Add(othEnt);
             }
         }
     }

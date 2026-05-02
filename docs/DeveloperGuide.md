@@ -724,24 +724,50 @@ m_Registry.Emplace<Collider2D> (e, ColliderShape::Box,
 m_Registry.Emplace<Collider2D>(e, ColliderShape::Circle, Vec2{16.f, 16.f});
 ```
 
-### Body types
+### Body types and position ownership
 
-| Type | Behaviour |
-|---|---|
-| `BodyType::Static` | Never moves (walls, floors) |
-| `BodyType::Dynamic` | Fully simulated — reacts to gravity and forces |
-| `BodyType::Kinematic` | Moves via velocity only, unaffected by forces |
-
-### Collision events
+| Type | Who owns position | How to move |
+|---|---|---|
+| `BodyType::Static` | Set at spawn — fixed forever | Don't write `Transform2D` after spawn |
+| `BodyType::Kinematic` | **You** own it | Write `Transform2D.position` each frame — synced into Box2D |
+| `BodyType::Dynamic` | **Box2D** owns it | Use `physSys.SetVelocity` / `ApplyImpulse` / `ApplyForce` — writing to `Transform2D.position` is silently overwritten every frame |
 
 ```cpp
-#include "utils/EventBus.hpp"
-#include "utils/Events.hpp"
+// Moving a Dynamic entity — always go through PhysicsSystem2D
+physSys.SetVelocity(e, {150.f, 0.f});            // pixels/s
+physSys.ApplyImpulse(e, {0.f, -400.f});          // instant push
+physSys.ApplyForce(e, {0.f, 200.f});             // continuous this step
+Vec2 vel = physSys.GetVelocity(e);               // read current velocity
+```
 
+### Trigger contacts — polling Contacts component
+
+`CollisionSystem2D` writes results into a `Contacts` component each frame.
+**Do not use EventBus for collision** — at colony sim scale (hundreds of entities)
+per-frame EventBus publishing becomes a bottleneck.
+
+```cpp
+#include "ecs/components/Contacts.hpp"
+#include "ecs/components/Tags.hpp"
+
+// In your system or scene Update — after CollisionSystem2D::Update():
+for (auto [e, contacts] : m_Registry.View<IsTrigger, Contacts>().each()) {
+    for (int i = 0; i < contacts.count; ++i) {
+        entt::entity other = contacts.entities[i];
+        // handle overlap between e and other
+    }
+}
+```
+
+`Contacts` is cleared and repopulated every frame. `Contacts::MAX` is 16 per trigger entity — raise it in `Contacts.hpp` if a zone can touch more than 16 things simultaneously.
+
+### Box2D contact events (low-frequency only)
+
+`CollisionEvent` via EventBus is still published by `PhysicsSystem2D` for Box2D `BeginContact` — fires **once per contact pair begin**, not every frame. Subscribe to it only for rare events (projectile-hits-wall, unit-enters-zone via Box2D sensor):
+
+```cpp
 EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
-    // e.entityA, e.entityB — the two entities
-    // e.point  — contact point in world space
-    // e.normal — collision normal (A → B)
+    // e.entityA, e.entityB, e.point, e.normal
 });
 ```
 

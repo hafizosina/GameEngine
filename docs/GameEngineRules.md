@@ -80,7 +80,66 @@ The `EventBus` currently uses `std::any` to type-erase event data. While this cr
 
 ---
 
-## 7. Baker / Placeholder Registration (Game-Side)
+## 7. Script Component Scope (Keep Logic in Systems)
+
+**Rule:** The `Script` component lambda is for **entity lifecycle only** — self-destruct timers, one-shot spawning, simple state flags. Game logic belongs in systems.
+
+**Why:** If complex behaviour migrates into Script lambdas (pathfinding, combat decisions, resource gathering), the ECS loses its ability to batch-process and the code becomes untestable closures scattered across entity creation sites.
+
+**✅ Correct Script usage:**
+```cpp
+// Bullet auto-destroy after lifetime
+float lifetime = 2.f;
+reg.Emplace<Script>(bullet, Script{
+    [lifetime](entt::registry& raw, Entity self, float dt) mutable {
+        lifetime -= dt;
+        if (lifetime <= 0.f) raw.destroy(self);
+    }
+});
+```
+
+**❌ Never in Script:**
+- Pathfinding or steering
+- Combat decisions or targeting
+- Resource gathering logic
+- Any behaviour that reads other entities' state
+
+Complex AI goes into dedicated engine components: **`UtilityAI`** (scored action selection) or **`FiniteStateMachine`** (state + transition table) — both as new components in `engine/ecs/components/`, with corresponding systems. Do not implement these in Script lambdas.
+
+---
+
+## 8. Physics Ownership — Never Write Transform2D on Dynamic Entities
+
+**Rule:** For entities with `BodyType::Dynamic`, Box2D owns the position. `PhysicsSystem2D::SyncFromBox2D()` overwrites `Transform2D.position` every frame. Writing to it from game code is silently ignored.
+
+| Body type | Position owner | How to move |
+|---|---|---|
+| Static | Fixed at spawn | Don't touch after creation |
+| Kinematic | Game code | Write `transform.position` → synced to Box2D |
+| Dynamic | Box2D | Use `physSys.SetVelocity` / `ApplyImpulse` / `ApplyForce` |
+
+---
+
+## 9. Collision Detection — Use Contacts Component, Not EventBus
+
+**Rule:** For colony sim scale (hundreds of entities), never use `EventBus::Publish(CollisionEvent{...})` in per-frame collision loops. Use the `Contacts` component instead.
+
+**Why:** `CollisionSystem2D` runs O(triggers × entities) per frame. At 50 triggers × 500 units, EventBus publishing means 25,000 dynamic dispatches per frame. `Contacts` writes into a fixed array — zero allocations, cache-friendly, deterministic.
+
+**✅ Correct:**
+```cpp
+// After CollisionSystem2D::Update(reg):
+for (auto [e, contacts] : reg.View<IsTrigger, Contacts>().each()) {
+    for (int i = 0; i < contacts.count; ++i)
+        HandleOverlap(e, contacts.entities[i]);
+}
+```
+
+**EventBus `CollisionEvent` is only for Box2D `BeginContact`** — fires once per contact pair start (low frequency). Keep it for rare events like projectile impacts.
+
+---
+
+## 10. Baker / Placeholder Registration (Game-Side)
 
 **Rule:** The engine has no built-in placeholder generators. Game code registers its own baker callbacks before calling `BakeMissing()`.
 
@@ -102,7 +161,7 @@ tracker->BakeMissing();
 
 ---
 
-## 8. Custom Events Stay in Game Layer
+## 11. Custom Events Stay in Game Layer
 
 **Rule:** `engine/utils/Events.hpp` defines only the 3 engine-emitted events (`CollisionEvent`, `EntityDiedEvent`, `HealthChangedEvent`). All game-specific events are plain structs defined anywhere in `game/src/` — no engine file edits required.
 

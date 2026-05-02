@@ -17,7 +17,7 @@ void PhysicsSystem2D::Init(Registry* reg, PhysicsWorld2D* world) {
     m_World    = world;
 
     // Wire collision events from Box2D → EventBus
-    world->SetContactCallback([this](b2Body* bodyA, b2Body* bodyB,
+    world->SetContactCallback([](b2Body* bodyA, b2Body* bodyB,
                                      Vec2 point, Vec2 normal) {
         auto ea = (entt::entity)(uintptr_t)bodyA->GetUserData().pointer;
         auto eb = (entt::entity)(uintptr_t)bodyB->GetUserData().pointer;
@@ -39,6 +39,39 @@ void PhysicsSystem2D::Step(float fixedDt) {
     m_World->Step(fixedDt);
     SyncFromBox2D();
     DestroyBodies();
+}
+
+// ── Dynamic body control ──────────────────────────────────────────────────────
+
+void PhysicsSystem2D::SetVelocity(entt::entity e, Vec2 velocityPixels) {
+    auto it = m_Bodies.find(e);
+    if (it == m_Bodies.end()) return;
+    b2Vec2 v{ PhysicsWorld2D::ToMetres(velocityPixels.x),
+              PhysicsWorld2D::ToMetres(velocityPixels.y) };
+    it->second->SetLinearVelocity(v);
+}
+
+void PhysicsSystem2D::ApplyImpulse(entt::entity e, Vec2 impulsePixels) {
+    auto it = m_Bodies.find(e);
+    if (it == m_Bodies.end()) return;
+    b2Vec2 imp{ PhysicsWorld2D::ToMetres(impulsePixels.x),
+                PhysicsWorld2D::ToMetres(impulsePixels.y) };
+    it->second->ApplyLinearImpulseToCenter(imp, /*wake*/ true);
+}
+
+void PhysicsSystem2D::ApplyForce(entt::entity e, Vec2 forcePixels) {
+    auto it = m_Bodies.find(e);
+    if (it == m_Bodies.end()) return;
+    b2Vec2 f{ PhysicsWorld2D::ToMetres(forcePixels.x),
+              PhysicsWorld2D::ToMetres(forcePixels.y) };
+    it->second->ApplyForceToCenter(f, /*wake*/ true);
+}
+
+Vec2 PhysicsSystem2D::GetVelocity(entt::entity e) const {
+    auto it = m_Bodies.find(e);
+    if (it == m_Bodies.end()) return {};
+    b2Vec2 v = it->second->GetLinearVelocity();
+    return PhysicsWorld2D::ToPixels({v.x, v.y});
 }
 
 // ── Private ──────────────────────────────────────────────────────────────────
