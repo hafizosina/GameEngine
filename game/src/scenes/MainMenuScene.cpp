@@ -11,6 +11,7 @@
 #include "ui/layout/Anchor.hpp"
 #include "scene/SceneManager.hpp"
 #include "scene/transitions/FadeTransition.hpp"
+#include "assets/AssetIDs.hpp"
 #include "utils/Logger.hpp"
 #include <raylib.h>
 
@@ -31,8 +32,9 @@ void MainMenuScene::OnEnter()
     panel->layout.direction = FlexDirection::Column;
     panel->layout.spacing = 20.f;
     panel->layout.padding = 40.f;
-    panel->backgroundColor = {30, 30, 40, 240};  // Semi-transparent dark blue/gray
-    panel->drawBorder = true;
+    panel->backgroundColor = {0, 0, 0, 0}; // Use texture
+    panel->backgroundTexture = Assets::TEX_UI_PANEL_PARCHMENT;
+    panel->drawBorder = false; // Texture has its own border
     panel->borderColor = {100, 100, 120, 255};
 
     // Title
@@ -48,6 +50,14 @@ void MainMenuScene::OnEnter()
         btn->anchor = Anchor::TopLeft;  // Required for flex layout
         btn->size = {320.f, 55.f};
         btn->onClick = callback;
+        
+        // Use wooden style textures
+        btn->textureNormal  = Assets::TEX_UI_BUTTON_NORMAL;
+        btn->textureHover   = Assets::TEX_UI_BUTTON_HOVER;
+        btn->texturePressed = Assets::TEX_UI_BUTTON_PRESSED;
+        
+        btn->soundHover     = Assets::SFX_UI_HOVER;
+        
         return btn;
     };
 

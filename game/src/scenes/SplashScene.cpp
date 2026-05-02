@@ -18,10 +18,10 @@ void SplashScene::OnEnter() {
 
     // Register game-provided placeholder generators.
     // Replace with your own implementations when you have custom art / audio.
-    tracker->RegisterTextureBaker(TextureBaker::BakePlaceholder);
-    tracker->RegisterSoundBaker  (SoundComposer::BakePlaceholder);
+    tracker->RegisterTextureBaker(TextureBaker::Bake);
+    tracker->RegisterSoundBaker  (SoundComposer::Bake);
 
-    tracker->BakeMissing();
+    tracker->BakeMissing(resetTextureBaker);
     m_BakeDone = true;
 
     LOG_INFO("SplashScene: baking complete — switch to your first scene below");

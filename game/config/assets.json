@@ -1,12 +1,6 @@
 {
   "assets": [
     {
-      "id":          "tex.player.idle",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/player/idle.png",
-      "placeholder": "assets/placeholder/player_idle.png"
-    },
-    {
       "id":          "tex.ui.button.normal",
       "type":        "TEXTURE",
       "real":        "assets/textures/ui/button_normal.png",
@@ -17,6 +11,18 @@
       "type":        "TEXTURE",
       "real":        "assets/textures/ui/button_hover.png",
       "placeholder": "assets/placeholder/ui_button_hover.png"
+    },
+    {
+      "id":          "tex.ui.button.pressed",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/ui/button_pressed.png",
+      "placeholder": "assets/placeholder/ui_button_pressed.png"
+    },
+    {
+      "id":          "tex.ui.panel.parchment",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/ui/panel_parchment.png",
+      "placeholder": "assets/placeholder/ui_panel_parchment.png"
     },
     {
       "id":          "tex.missing",
@@ -31,82 +37,10 @@
       "placeholder": ""
     },
     {
-      "id":          "sfx.jump",
+      "id":          "sfx.ui.hover",
       "type":        "SOUND",
-      "real":        "assets/sounds/sfx/jump.wav",
-      "placeholder": "assets/placeholder/sfx_jump.wav"
-    },
-    {
-      "id":          "sfx.click",
-      "type":        "SOUND",
-      "real":        "assets/sounds/sfx/click.wav",
-      "placeholder": "assets/placeholder/sfx_click.wav"
-    },
-    {
-      "id":          "bgm.menu",
-      "type":        "MUSIC",
-      "real":        "assets/sounds/bgm/menu.ogg",
-      "placeholder": ""
-    },
-    {
-      "id":          "tex.enemy",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/enemy/idle.png",
-      "placeholder": "assets/placeholder/enemy_idle.png"
-    },
-    {
-      "id":          "tex.bullet",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/fx/bullet.png",
-      "placeholder": "assets/placeholder/bullet.png"
-    },
-    {
-      "id":          "tex.particle",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/fx/particle.png",
-      "placeholder": "assets/placeholder/particle.png"
-    },
-    {
-      "id":          "tex.bg.game",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/bg/game_bg.png",
-      "placeholder": "assets/placeholder/bg_game.png"
-    },
-    {
-      "id":          "sfx.shoot",
-      "type":        "SOUND",
-      "real":        "assets/sounds/sfx/shoot.wav",
-      "placeholder": "assets/placeholder/sfx_shoot.wav"
-    },
-    {
-      "id":          "sfx.hit",
-      "type":        "SOUND",
-      "real":        "assets/sounds/sfx/hit.wav",
-      "placeholder": "assets/placeholder/sfx_hit.wav"
-    },
-    {
-      "id":          "sfx.player.death",
-      "type":        "SOUND",
-      "real":        "assets/sounds/sfx/player_death.wav",
-      "placeholder": "assets/placeholder/sfx_player_death.wav"
-    },
-    {
-      "id":          "bgm.game",
-      "type":        "MUSIC",
-      "real":        "assets/sounds/bgm/game.ogg",
-      "placeholder": ""
-    },
-    {
-      "id":          "tex.coin",
-      "type":        "TEXTURE",
-      "real":        "assets/textures/items/coin.png",
-      "placeholder": "assets/placeholder/coin.png"
-    },
-    {
-      "id":          "sfx.collect",
-      "type":        "SOUND",
-      "real":        "assets/sounds/sfx/collect.wav",
-      "placeholder": "assets/placeholder/sfx_collect.wav"
+      "real":        "assets/sounds/ui/hover.wav",
+      "placeholder": "assets/placeholder/ui_hover.wav"
     }
   ]
 }

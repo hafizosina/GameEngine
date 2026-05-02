@@ -14,6 +14,7 @@ public:
 private:
     float m_Timer    = 0.f;
     bool  m_BakeDone = false;
+    bool  resetTextureBaker = true;
 };
 
 } // namespace Zhenzhu
