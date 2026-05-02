@@ -95,6 +95,18 @@
       "type":        "MUSIC",
       "real":        "assets/sounds/bgm/game.ogg",
       "placeholder": ""
+    },
+    {
+      "id":          "tex.coin",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/items/coin.png",
+      "placeholder": "assets/placeholder/coin.png"
+    },
+    {
+      "id":          "sfx.collect",
+      "type":        "SOUND",
+      "real":        "assets/sounds/sfx/collect.wav",
+      "placeholder": "assets/placeholder/sfx_collect.wav"
     }
   ]
 }

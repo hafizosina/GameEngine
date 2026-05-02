@@ -24,5 +24,8 @@
         "gravity": 980.0,
         "tileSize": 32,
         "cameraLerpSpeed": 5.0
+    },
+    "game": {
+        "winScore": 10
     }
 }

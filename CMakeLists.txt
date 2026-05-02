@@ -61,9 +61,6 @@ target_include_directories(zhenzhu-engine PUBLIC
 # ── Game Executable ──────────────────────────────
 set(GAME_SOURCES 
     "src/main.cpp"
-    "src/scenes/MainMenuScene.cpp"
-    "src/scenes/GameScene.cpp"
-    "src/scenes/PauseScene.cpp"
 )
 
 add_executable(MyGame ${GAME_SOURCES})
