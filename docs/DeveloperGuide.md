@@ -1,11 +1,14 @@
 # Zhenzhu Engine — Developer Guide
 
+> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
+> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+
 **Engine version**: Phase 7 (complete)  
 **Language**: C++20 · **Build**: SCons · **Namespace**: `Zhenzhu`
 
 This guide explains how to use the engine as a game developer. It assumes the engine itself is
-already built (`libzhenzhu-engine.a`). Everything in `src/` is yours — the engine layer in
-`engine/` is read-only.
+already built (`build/zhenzhu-engine.a`). Everything in `game/src/` is yours — the engine layer
+in `engine/` is read-only.
 
 ---
 
@@ -47,22 +50,23 @@ The build produces:
 - `build/libzhenzhu-engine.a` — engine static library
 - `build/MyGame` — the game executable
 
-**Every `.cpp` you create in `src/` must be registered in `SConstruct`.**  
-The existing glob already covers `src/`, `src/scenes/`, `src/factories/`, `src/ui/`:
+**Every `.cpp` you create in `game/src/` must be reachable from `SConstruct`.**  
+The existing glob already covers all subdirectories one level deep:
 ```python
-game_src = Glob('build/src/*.cpp') + Glob('build/src/*/*.cpp')
+game_src = Glob('build/game/src/*.cpp') + Glob('build/game/src/*/*.cpp')
 ```
-New subdirectory? Add a matching `Glob('build/src/yourfolder/*.cpp')` line.
+New subdirectory? Add a matching `Glob('build/game/src/yourfolder/*.cpp')` line.
 
 ---
 
 ## 2. Project Layout
 
 ```
-src/
+game/src/
 ├── main.cpp                ← game entry point (do not restructure)
+├── assets/                 ← AssetIDs.hpp (game-owned constants)
+├── dev/                    ← TextureBaker.cpp/.hpp, SoundComposer.cpp/.hpp
 ├── scenes/                 ← one .hpp + .cpp per scene
-├── factories/              ← header-only entity factories
 └── ui/                     ← custom UICanvas subclasses (e.g. GameHUD)
 
 config/                     ← all tunable data (JSON, no hardcoded values)
@@ -133,9 +137,9 @@ LOG_DEBUG("dt = " + std::to_string(dt));  // stripped in release builds
 }
 ```
 
-### Step 2 — Add constant to `src/assets/AssetIDs.hpp`
+### Step 2 — Add constant to `game/src/assets/AssetIDs.hpp`
 
-This file is yours — edit it freely. The engine does not own it.
+This file is yours — edit it freely. The engine does not own or include it.
 
 ```cpp
 namespace Zhenzhu::Assets {
@@ -146,7 +150,7 @@ namespace Zhenzhu::Assets {
 ### Step 3 — Use it
 
 ```cpp
-#include "assets/AssetIDs.hpp"   // resolves to src/assets/AssetIDs.hpp
+#include "assets/AssetIDs.hpp"   // resolves to game/src/assets/AssetIDs.hpp (via CPPPATH)
 
 auto tex = ServiceLocator::Get<ResourceManager>()->LoadTexture(Assets::TEX_MY_SPRITE);
 ```
@@ -156,14 +160,14 @@ need to check this yourself.
 
 ### Placeholder generation — SplashScene
 
-Missing assets are baked to `assets/placeholder/` during the `SplashScene` by the
-game-provided `TextureBaker` and `SoundComposer` classes in `src/dev/`.
+Missing assets are baked to `assets/placeholder/` during `SplashScene` by the
+game-provided `TextureBaker` and `SoundComposer` classes in `game/src/dev/`.
 
 To customise placeholder visuals or sounds, edit those two files. The engine calls them via
 registered callbacks — it has no built-in placeholder logic of its own.
 
 ```cpp
-// src/scenes/SplashScene.cpp — already wired
+// game/src/scenes/SplashScene.cpp — already wired
 tracker->RegisterTextureBaker(TextureBaker::BakePlaceholder);
 tracker->RegisterSoundBaker  (SoundComposer::BakePlaceholder);
 tracker->BakeMissing();
@@ -225,7 +229,7 @@ Useful for tweaking values without restarting.
 ### Creating a scene
 
 ```cpp
-// src/scenes/MyScene.hpp
+// game/src/scenes/MyScene.hpp
 #pragma once
 #include "scene/Scene.hpp"
 #include "ui/core/UICanvas.hpp"
@@ -249,7 +253,7 @@ private:
 ```
 
 ```cpp
-// src/scenes/MyScene.cpp
+// game/src/scenes/MyScene.cpp
 #include "scenes/MyScene.hpp"
 #include "core/ServiceLocator.hpp"
 #include "renderer/Renderer2D.hpp"
@@ -404,7 +408,7 @@ m_Registry.Emplace<Script>(bullet, Script{
 
 ### Factories — preferred pattern for spawning
 
-Put spawning code in `src/factories/YourFactory.hpp` (header-only):
+Put spawning code in `game/src/factories/YourFactory.hpp` (header-only):
 
 ```cpp
 #pragma once
@@ -746,10 +750,10 @@ EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
 });
 ```
 
-### Custom game events — define in `src/`, no engine edits needed
+### Custom game events — define in `game/src/`, no engine edits needed
 
 ```cpp
-// src/events/GameEvents.hpp  (create this file yourself)
+// game/src/events/GameEvents.hpp  (create this file yourself)
 #pragma once
 
 struct LevelCompleteEvent { int level; int score; };
@@ -868,7 +872,7 @@ DebugDraw2D::DrawFPS(*renderer);                           // FPS counter
 | **No raylib in headers** | forward-declare, use in .cpp only | `#include <raylib.h>` in .hpp |
 | **No logic in components** | Put logic in systems or Script | Methods on structs |
 | **No `std::cout`** | `LOG_INFO(...)` | `std::cout << ...` |
-| **Register every .cpp** | Add to `SConstruct` game_src | Forget → linker errors |
+| **Register every .cpp** | Reachable via `SConstruct` glob for `game/src/` | Forget → linker errors |
 | **No 3D** | Everything is 2D | Never add 3D rendering |
 
 ---

@@ -1,5 +1,8 @@
 # Zhenzhu Engine — Project State
 
+> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
+> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+
 **Current Status**: 🟢 All Phases Complete
 **Build System**: SCons
 **Primary Language**: C++20
@@ -80,7 +83,7 @@
 - [x] **AssetTracker**: Real-time disk scanning for real assets vs placeholders vs missing files.
 - [x] **ResourceManager**: Generic caching system for all asset types (Textures, Fonts, Sound, Music, Data).
 - [x] **Loaders**: Specialized loaders for Raylib-specific types and generic JSON data.
-- [x] **Asset Constants**: Generated `AssetIDs.hpp` to prevent string-typo bugs in game code.
+- [x] **Asset Constants**: `game/src/assets/AssetIDs.hpp` — game-owned, not part of engine. Engine never includes it; sees only string IDs at runtime.
 
 ### Phase 1: Data & Config Layer
 - [x] **Serializer**: Robust JSON read/write wrapper with nested key support.
@@ -105,13 +108,12 @@
 - [x] **F1/F2/F3 overlay toggles** — collider wire, asset status, frame profile
 - [x] **F5 hot reload** — re-reads all config JSON without restart
 - [x] **Scene::GetRegistry()** — virtual hook for debug collider overlay
-- [x] **8 new asset IDs** — TEX_ENEMY, TEX_BULLET, TEX_PARTICLE, TEX_BG_GAME, SFX_SHOOT/HIT/DEATH, BGM_GAME
-- [x] **IsBullet, IsParticle tags** added to Tags.hpp
-- [x] **PlayerFactory, EnemyFactory, BulletFactory, ParticleFactory** — all header-only
-- [x] **GameHUD** — UICanvas subclass; auto-updates from HealthChangedEvent
-- [x] **PauseScene** — overlay pushed on GameScene; Resume/Quit buttons
-- [x] **GameScene** — full game scene with ECS systems, camera, HUD, ESC pause, death transition
-- [x] **MainMenuScene "Start Game"** wired to GameScene via FadeTransition
+- [x] **Asset IDs in game layer** — `game/src/assets/AssetIDs.hpp` contains TEX_PLAYER, TEX_ENEMY, TEX_BULLET, SFX_UI_HOVER, FONT_MAIN, etc.
+- [x] **IsBullet, IsParticle tags** added to `engine/ecs/components/Tags.hpp`
+- [x] **TextureBaker + SoundComposer** — `game/src/dev/` (game-owned, registered via `AssetTracker::RegisterTextureBaker/RegisterSoundBaker`)
+- [x] **SplashScene** — `game/src/scenes/SplashScene` registers bakers, calls `BakeMissing()`, transitions to MainMenuScene
+- [x] **MainMenuScene** — `game/src/scenes/MainMenuScene` with UICanvas, buttons, transitions to GameplayScene
+- [x] **GameplayScene** — `game/src/scenes/GameplayScene` with inline custom components (PlayerTag, EnemyTag, BulletTag, PlayerController, EnemyAI, BulletData), ObjectPool for bullets, enemy spawning, collision handling
 - [x] **Registry::Emplace** fixed to use `decltype(auto)` for empty tag types
 
 ---

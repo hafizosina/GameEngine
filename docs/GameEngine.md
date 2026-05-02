@@ -1,5 +1,8 @@
 # Complete Game Engine — Full Picture
 
+> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
+> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+
 ---
 
 ## 🗺️ Top Level
@@ -7,7 +10,8 @@
 ```
 zhenzhu-engine/
 │
-├── engine/
+├── SConstruct              ← build config (SCons)
+├── engine/                 ← engine library (read-only)
 │   ├── core/
 │   ├── ecs/
 │   ├── ui/
@@ -23,8 +27,16 @@ zhenzhu-engine/
 │   ├── pool/
 │   └── utils/
 │
-├── vendor/
-└── CMakeLists.txt
+├── game/src/               ← game code (yours to edit)
+│   ├── main.cpp
+│   ├── assets/             ← AssetIDs.hpp (game-owned)
+│   ├── dev/                ← TextureBaker, SoundComposer
+│   ├── scenes/             ← SplashScene, MainMenuScene, GameplayScene
+│   └── ui/                 ← custom UICanvas subclasses (GameHUD etc.)
+│
+├── config/                 ← JSON data files
+├── assets/                 ← textures, sounds, fonts, placeholder/
+└── vendor/
 ```
 
 ---
@@ -114,7 +126,10 @@ assets/
 │   ├── GetStatus(id)    → REAL | PLACEHOLDER | MISSING
 │   ├── GetAllPlaceholders() → list of pending assets
 │   ├── RescanStatus()   ← re-checks disk after bake pass
-│   └── Report()         ← prints status table to logger
+│   ├── Report()         ← prints status table to logger
+│   ├── RegisterTextureBaker(fn) ← game provides placeholder generator
+│   ├── RegisterSoundBaker(fn)   ← game provides placeholder generator
+│   └── BakeMissing()    ← calls registered bakers for MISSING assets
 │
 └── AssetEntry           ← one row in the registry
     ├── id               "ui.button_normal"
@@ -124,14 +139,15 @@ assets/
     └── status           REAL | PLACEHOLDER | MISSING
 
 
-AssetIDs.hpp             ← constants, no magic strings in game code
-    ASSET_UI_BUTTON_NORMAL   = "ui.button_normal"
-    ASSET_UI_BUTTON_HOVER    = "ui.button_hover"
-    ASSET_PLAYER_IDLE        = "player.idle"
-    ASSET_SFX_JUMP           = "sfx.jump"
-    ASSET_BGM_MENU           = "bgm.menu"
-    ASSET_FONT_MAIN          = "font.main"
+game/src/assets/AssetIDs.hpp  ← game-owned constants (edit freely)
+    TEX_UI_BUTTON_NORMAL  = "tex.ui.button.normal"
+    TEX_PLAYER            = "tex.player"
+    TEX_ENEMY             = "tex.enemy"
+    TEX_BULLET            = "tex.bullet"
+    SFX_UI_HOVER          = "sfx.ui.hover"
+    FONT_MAIN             = "font.main"
     ...
+    (engine does not own or know about this file)
 ```
 
 ---
@@ -497,6 +513,12 @@ utils/
 │   ├── Error(msg)
 │   └── Debug(msg)       ← stripped in release
 │
+├── FrameProfiler        ← header-only named-sample timer (ENGINE_DEBUG)
+│   ├── Begin(name)      ← start timing a named section
+│   ├── End(name)        ← record sample
+│   ├── Reset()          ← call each frame
+│   └── Samples()        → map<string, float> of name → ms
+│
 ├── EventBus             ← decoupled publish/subscribe
 │   ├── Subscribe<T>(callback)
 │   ├── Publish<T>(event)
@@ -613,8 +635,7 @@ Main Loop every frame:
 ```
 zhenzhu-engine/
 │
-├── CMakeLists.txt
-├── cmake/CPM.cmake
+├── SConstruct
 │
 ├── engine/
 │   ├── core/
@@ -744,10 +765,27 @@ zhenzhu-engine/
 │   └── utils/
 │       ├── Logger.hpp
 │       ├── EventBus.hpp
+│       ├── Events.hpp          ← CollisionEvent, EntityDiedEvent, HealthChangedEvent
+│       ├── FrameProfiler.hpp   ← header-only, ENGINE_DEBUG guard
 │       ├── Math2D.hpp
 │       ├── UUID.hpp
 │       └── Serializer.hpp
 │
+├── game/src/                   ← game code (yours to edit)
+│   ├── main.cpp
+│   ├── assets/
+│   │   └── AssetIDs.hpp        ← game-owned asset ID constants
+│   ├── dev/
+│   │   ├── TextureBaker.hpp/.cpp  ← placeholder texture generator
+│   │   └── SoundComposer.hpp/.cpp ← placeholder sound generator
+│   ├── scenes/
+│   │   ├── SplashScene.hpp/.cpp
+│   │   ├── MainMenuScene.hpp/.cpp
+│   │   └── GameplayScene.hpp/.cpp
+│   └── ui/                     ← custom UICanvas subclasses
+│
+├── config/                     ← JSON data files
+├── assets/                     ← textures, sounds, fonts, placeholder/
 └── vendor/
     ├── raylib/
     ├── entt/
@@ -779,4 +817,4 @@ Utils            nothing                       shared tools
 Application      everything                    boots + drives all
 ```
 
-That's the complete engine. Every system we discussed, nothing missing. Want to start writing the actual CMakeLists or pick a subsystem to implement first?
+That's the complete engine. All phases 0–7 are implemented and the engine is ready for game development.
