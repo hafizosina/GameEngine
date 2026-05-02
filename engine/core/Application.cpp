@@ -37,8 +37,8 @@ void Application::Init() {
 
     // ── Phase 5 ──────────────────────────────────────
     m_Audio.Init(&m_Data.settings);
-    m_SceneManager.Init();
     m_UI.Init(&m_Data.theme, &m_Resources);
+    m_SceneManager.Init();
 
     // ── Register services ────────────────────────────
     ServiceLocator::Register(&m_Window);
@@ -64,8 +64,8 @@ void Application::Run() {
         m_Timer.Tick();
         float dt = m_Timer.GetDeltaTime();
 
-        m_Async.Flush();
         ProcessInput();
+        m_Async.Flush();
 
         while (m_Timer.ShouldFixedUpdate())
             FixedUpdate();

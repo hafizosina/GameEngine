@@ -1,4 +1,5 @@
 #include "scenes/MainMenuScene.hpp"
+#include "core/Application.hpp"
 #include "core/ServiceLocator.hpp"
 #include "ui/UISystem.hpp"
 #include "ui/widgets/UIPanel.hpp"
@@ -50,7 +51,7 @@ void MainMenuScene::OnEnter() {
     quitBtn->size = { 320.f, 50.f };
     quitBtn->onClick = []() { 
         LOG_INFO("Quit clicked!");
-        // Get Application and quit
+        Application::Quit();
     };
 
     panel->AddChild(std::move(title));

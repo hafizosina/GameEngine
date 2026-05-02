@@ -16,7 +16,7 @@
         "sizeSmall": 12,
         "sizeNormal": 16,
         "sizeLarge": 24,
-        "sizeTitle": 48
+        "sizeTitle": 30
     },
     "shape": {
         "cornerRadius": 6,
