@@ -26,7 +26,7 @@ public:
     void RegisterTextureBaker(BakerFn fn) { m_TextureBaker = std::move(fn); }
     void RegisterSoundBaker  (BakerFn fn) { m_SoundBaker   = std::move(fn); }
 
-    void BakeMissing();
+    void BakeMissing(bool forceAll = false);
     void Report() const;
 
 private:

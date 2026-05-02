@@ -49,6 +49,11 @@ void Renderer2D::DrawTexture(Texture2D tex, Rect dest, Color4 tint) {
     ::DrawTexturePro(tex, ToRL(src), ToRL(dest), { 0, 0 }, 0.0f, ToRL(tint));
 }
 
+void Renderer2D::DrawTextureNPatch(Texture2D tex, NPatchInfo patch, Rect dest,
+                                   Vec2 origin, float rotation, Color4 tint) {
+    ::DrawTextureNPatch(tex, patch, ToRL(dest), ToRL(origin), rotation, ToRL(tint));
+}
+
 void Renderer2D::DrawSpriteEx(Texture2D tex, Rect src, Vec2 pos,
                                Vec2 origin, float rotation, float scale,
                                Color4 tint) {

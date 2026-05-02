@@ -71,7 +71,16 @@ void UIButton::Render(const UIContext& ctx) {
     // 3. Draw
     if (!currentAsset.empty()) {
         Texture2D tex = ctx.resources->LoadTexture(currentAsset);
-        ctx.renderer->DrawTexture(tex, drawRect);
+        // Use 9-patch to prevent border stretching
+        NPatchInfo patch;
+        patch.source = { 0.f, 0.f, (float)tex.width, (float)tex.height };
+        patch.left   = 16;
+        patch.top    = 16;
+        patch.right  = 16;
+        patch.bottom = 16;
+        patch.layout = NPATCH_NINE_PATCH;
+        
+        ctx.renderer->DrawTextureNPatch(tex, patch, drawRect);
     } else {
         ctx.renderer->DrawRect(drawRect, bg);
     }

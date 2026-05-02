@@ -23,6 +23,9 @@ public:
                     Color4 tint = {255, 255, 255, 255});
     void DrawTexture(Texture2D tex, Rect dest,
                      Color4 tint = {255, 255, 255, 255});
+    void DrawTextureNPatch(Texture2D tex, NPatchInfo patch, Rect dest,
+                           Vec2 origin = {0, 0}, float rotation = 0.f,
+                           Color4 tint = {255, 255, 255, 255});
     void DrawSpriteEx(Texture2D tex, Rect src, Vec2 pos, Vec2 origin,
                       float rotation, float scale,
                       Color4 tint = {255, 255, 255, 255});

@@ -87,16 +87,22 @@ std::vector<AssetEntry> AssetTracker::GetAllMissing() const {
     return result;
 }
 
-void AssetTracker::BakeMissing() {
+void AssetTracker::BakeMissing(bool forceAll) {
     if (!m_DB) return;
 
-    auto missing = GetAllMissing();
-    if (missing.empty()) return;
+    std::vector<AssetEntry> toBake;
+    if (forceAll) {
+        toBake = m_DB->GetAll();
+    } else {
+        toBake = GetAllMissing();
+    }
+    
+    if (toBake.empty()) return;
 
-    LOG_INFO("AssetTracker: " + std::to_string(missing.size()) + " missing assets — baking...");
+    LOG_INFO("AssetTracker: " + std::to_string(toBake.size()) + (forceAll ? " assets — force baking..." : " missing assets — baking..."));
 
     bool anyBaked = false;
-    for (auto& entry : missing) {
+    for (auto& entry : toBake) {
         if (entry.placeholderPath.empty()) continue;
 
         if (entry.type == AssetType::TEXTURE) {
