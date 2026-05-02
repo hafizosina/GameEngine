@@ -12,6 +12,7 @@
 #include "scene/SceneManager.hpp"
 #include "scene/transitions/FadeTransition.hpp"
 #include "assets/AssetIDs.hpp"
+#include "scenes/GameplayScene.hpp"
 #include "utils/Logger.hpp"
 #include <raylib.h>
 
@@ -61,7 +62,12 @@ void MainMenuScene::OnEnter()
         return btn;
     };
 
-    panel->AddChild(createBtn("NEW WORLD", []() { LOG_INFO("New World clicked!"); }));
+    panel->AddChild(createBtn("NEW WORLD", [this]() { 
+        LOG_INFO("New World clicked!"); 
+        auto* sm = ServiceLocator::Get<SceneManager>();
+        sm->Switch(std::make_unique<GameplayScene>(), 
+                    std::make_unique<FadeTransition>(1.0f));
+    }));
     panel->AddChild(createBtn("LOAD WORLD", []() { LOG_INFO("Load World clicked!"); }));
     panel->AddChild(createBtn("SETTINGS", []() { LOG_INFO("Settings clicked!"); }));
 
