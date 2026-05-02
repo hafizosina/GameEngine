@@ -9,6 +9,11 @@ namespace Assets {
     constexpr const char* TEX_UI_BUTTON_PRESSED   = "tex.ui.button.pressed";
     constexpr const char* TEX_UI_PANEL_PARCHMENT  = "tex.ui.panel.parchment";
     
+    // ── Gameplay ────────────────────────────────────
+    constexpr const char* TEX_PLAYER             = "tex.player";
+    constexpr const char* TEX_ENEMY              = "tex.enemy";
+    constexpr const char* TEX_BULLET             = "tex.bullet";
+
     // ── SFX ─────────────────────────────────────────
     constexpr const char* SFX_UI_HOVER            = "sfx.ui.hover";
 

@@ -13,6 +13,10 @@ bool TextureBaker::Bake(const std::string& assetId, const std::string& outputPat
     if (assetId.find("tex.ui.panel.parchment") != std::string::npos) {
         return BakeParchmentPanel(assetId, outputPath);
     }
+    if (assetId == "tex.player") return BakePlayer(assetId, outputPath);
+    if (assetId == "tex.enemy")  return BakeEnemy(assetId, outputPath);
+    if (assetId == "tex.bullet") return BakeBullet(assetId, outputPath);
+
     return BakePlaceholder(assetId, outputPath);
 }
 
@@ -134,6 +138,60 @@ bool TextureBaker::BakeParchmentPanel(const std::string& assetId, const std::str
         LOG_INFO("Baked: " + outputPath);
     else
         LOG_ERROR("Failed to bake: " + outputPath);
+    return ok;
+}
+
+bool TextureBaker::BakePlayer(const std::string& assetId, const std::string& outputPath) {
+    LOG_INFO("Baking player for: " + assetId);
+    std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
+    
+    Image img = GenImageColor(64, 64, BLANK);
+    // Body: Blue knight-ish shield
+    ImageDrawRectangle(&img, 16, 8, 32, 48, SKYBLUE);
+    ImageDrawRectangleLines(&img, {16, 8, 32, 48}, 3, BLUE);
+    // Visor
+    ImageDrawRectangle(&img, 20, 16, 24, 8, DARKGRAY);
+    // Shoulder pads
+    ImageDrawCircle(&img, 16, 24, 8, DARKBLUE);
+    ImageDrawCircle(&img, 48, 24, 8, DARKBLUE);
+
+    bool ok = ExportImage(img, outputPath.c_str());
+    UnloadImage(img);
+    return ok;
+}
+
+bool TextureBaker::BakeEnemy(const std::string& assetId, const std::string& outputPath) {
+    LOG_INFO("Baking enemy for: " + assetId);
+    std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
+    
+    Image img = GenImageColor(64, 64, BLANK);
+    // Body: Red angry block
+    ImageDrawRectangle(&img, 12, 12, 40, 40, RED);
+    ImageDrawRectangleLines(&img, {12, 12, 40, 40}, 3, MAROON);
+    // Eyes
+    ImageDrawRectangle(&img, 20, 24, 8, 8, YELLOW);
+    ImageDrawRectangle(&img, 36, 24, 8, 8, YELLOW);
+    // Simple blocky horns
+    ImageDrawRectangle(&img, 12, 4, 8, 8, MAROON);
+    ImageDrawRectangle(&img, 44, 4, 8, 8, MAROON);
+
+    bool ok = ExportImage(img, outputPath.c_str());
+    UnloadImage(img);
+    return ok;
+}
+
+bool TextureBaker::BakeBullet(const std::string& assetId, const std::string& outputPath) {
+    LOG_INFO("Baking bullet for: " + assetId);
+    std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
+    
+    Image img = GenImageColor(32, 32, BLANK);
+    // Simple glow using nested circles since ImageDrawCircleGradient doesn't exist
+    ImageDrawCircle(&img, 16, 16, 12, {255, 200, 0, 100});
+    ImageDrawCircle(&img, 16, 16, 8, YELLOW);
+    ImageDrawCircle(&img, 16, 16, 3, WHITE);
+
+    bool ok = ExportImage(img, outputPath.c_str());
+    UnloadImage(img);
     return ok;
 }
 

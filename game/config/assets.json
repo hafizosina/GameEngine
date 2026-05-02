@@ -41,6 +41,24 @@
       "type":        "SOUND",
       "real":        "assets/sounds/ui/hover.wav",
       "placeholder": "assets/placeholder/ui_hover.wav"
+    },
+    {
+      "id":          "tex.player",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/game/player.png",
+      "placeholder": "assets/placeholder/player.png"
+    },
+    {
+      "id":          "tex.enemy",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/game/enemy.png",
+      "placeholder": "assets/placeholder/enemy.png"
+    },
+    {
+      "id":          "tex.bullet",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/game/bullet.png",
+      "placeholder": "assets/placeholder/bullet.png"
     }
   ]
 }
