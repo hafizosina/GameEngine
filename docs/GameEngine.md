@@ -27,15 +27,16 @@ zhenzhu-engine/
 │   ├── pool/
 │   └── utils/
 │
-├── game/src/               ← game code (yours to edit)
-│   ├── main.cpp
-│   ├── assets/             ← AssetIDs.hpp (game-owned)
-│   ├── dev/                ← TextureBaker, SoundComposer
-│   ├── scenes/             ← SplashScene, MainMenuScene, GameplayScene
-│   └── ui/                 ← custom UICanvas subclasses (GameHUD etc.)
+├── game/
+│   ├── src/                ← game code (yours to edit)
+│   │   ├── main.cpp
+│   │   ├── assets/         ← AssetIDs.hpp (game-owned)
+│   │   ├── dev/            ← TextureBaker, SoundComposer
+│   │   ├── scenes/         ← SplashScene, MainMenuScene, GameplayScene
+│   │   └── ui/             ← custom UICanvas subclasses
+│   ├── config/             ← JSON data files (loaded via gameRoot="game")
+│   └── assets/             ← textures, sounds, fonts, placeholder/
 │
-├── config/                 ← JSON data files
-├── assets/                 ← textures, sounds, fonts, placeholder/
 └── vendor/
 ```
 
@@ -106,7 +107,7 @@ data/
     └── GetScene(id)     → SceneEntry (class, transition, duration)
 
 
-config/                  ← JSON files (data lives here not in code)
+game/config/             ← JSON files (data lives here not in code)
 ├── assets.json          ← all asset IDs + real + placeholder paths
 ├── settings.json        ← volume, resolution, language, vsync
 ├── keybinds.json        ← action → keyboard + gamepad mappings
@@ -129,7 +130,7 @@ assets/
 │   ├── Report()         ← prints status table to logger
 │   ├── RegisterTextureBaker(fn) ← game provides placeholder generator
 │   ├── RegisterSoundBaker(fn)   ← game provides placeholder generator
-│   └── BakeMissing()    ← calls registered bakers for MISSING assets
+│   └── BakeMissing(forceAll=false) ← bake MISSING; pass true to force-rebake all
 │
 └── AssetEntry           ← one row in the registry
     ├── id               "ui.button_normal"
@@ -213,11 +214,16 @@ ecs/
 ```
 renderer/
 ├── Renderer2D           ← main drawing API (2D only)
-│   ├── DrawSprite(texture, pos, rect, tint)
-│   ├── DrawText(font, text, pos, size, color)
+│   ├── DrawSprite(texture, pos, tint)
+│   ├── DrawTexture(texture, destRect, tint)
+│   ├── DrawTextureNPatch(texture, patch, destRect, ...)  ← 9-slice scaling
+│   ├── DrawSpriteEx(texture, src, pos, origin, rot, scale, tint)
+│   ├── DrawText(font, text, pos, size, spacing, color)
+│   ├── DrawTextSimple(text, pos, size, color)            ← default font
 │   ├── DrawRect(rect, color)
+│   ├── DrawRectLines(rect, thick, color)
 │   ├── DrawCircle(pos, radius, color)
-│   └── DrawLine(start, end, color)
+│   └── DrawLine(start, end, thick, color)
 │
 ├── Camera2D             ← wraps raylib Camera2D
 │   ├── Follow(entity)   ← smooth follow with lerp
@@ -771,21 +777,32 @@ zhenzhu-engine/
 │       ├── UUID.hpp
 │       └── Serializer.hpp
 │
-├── game/src/                   ← game code (yours to edit)
-│   ├── main.cpp
-│   ├── assets/
-│   │   └── AssetIDs.hpp        ← game-owned asset ID constants
-│   ├── dev/
-│   │   ├── TextureBaker.hpp/.cpp  ← placeholder texture generator
-│   │   └── SoundComposer.hpp/.cpp ← placeholder sound generator
-│   ├── scenes/
-│   │   ├── SplashScene.hpp/.cpp
-│   │   ├── MainMenuScene.hpp/.cpp
-│   │   └── GameplayScene.hpp/.cpp
-│   └── ui/                     ← custom UICanvas subclasses
+├── game/
+│   ├── src/                    ← game code (yours to edit)
+│   │   ├── main.cpp
+│   │   ├── assets/
+│   │   │   └── AssetIDs.hpp    ← game-owned asset ID constants
+│   │   ├── dev/
+│   │   │   ├── TextureBaker.hpp/.cpp
+│   │   │   └── SoundComposer.hpp/.cpp
+│   │   ├── scenes/
+│   │   │   ├── SplashScene.hpp/.cpp
+│   │   │   ├── MainMenuScene.hpp/.cpp
+│   │   │   └── GameplayScene.hpp/.cpp
+│   │   └── ui/
+│   ├── config/                 ← JSON data files (loaded via app.Init("game"))
+│   │   ├── settings.json
+│   │   ├── assets.json         ← paths relative to game/ (prepended by AssetDB)
+│   │   ├── keybinds.json
+│   │   ├── ui_theme.json
+│   │   ├── game_config.json
+│   │   └── scenes.json
+│   └── assets/
+│       ├── textures/           ← real textures (artist-delivered)
+│       ├── sounds/
+│       ├── fonts/
+│       └── placeholder/        ← auto-baked at SplashScene
 │
-├── config/                     ← JSON data files
-├── assets/                     ← textures, sounds, fonts, placeholder/
 └── vendor/
     ├── raylib/
     ├── entt/

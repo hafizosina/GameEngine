@@ -17,24 +17,11 @@
 ```
 .
 ├── CLAUDE.md                   ← you are here
-├── SConstruct                  ← build config, add new .cpp here
-├── setup_vendor.sh             ← vendor install script
-├── config/                     ← JSON data files (no hardcoded values)
-│   ├── settings.json           ← window, audio, gameplay prefs
-│   ├── keybinds.json           ← action → key mappings
-│   ├── ui_theme.json           ← colors, fonts, sizes
-│   ├── game_config.json        ← player/enemy/world values
-│   ├── assets.json             ← ALL asset IDs + paths
-│   └── scenes.json             ← scene registry
-├── assets/
-│   ├── textures/               ← real textures (delivered by artist)
-│   ├── sounds/                 ← real audio
-│   ├── fonts/                  ← real fonts
-│   └── placeholder/            ← auto-generated at splash screen
-├── engine/                     ← engine library code
+├── SConstruct                  ← build config
+├── engine/                     ← engine library code (read-only)
 │   ├── core/                   ← Application, Window, Timer, ServiceLocator
 │   ├── data/                   ← DataManager, all DB classes
-│   ├── assets/                 ← AssetTracker, AssetEntry, AssetIDs
+│   ├── assets/                 ← AssetTracker, AssetEntry
 │   ├── resources/              ← ResourceManager, all Loaders
 │   ├── async/                  ← AsyncManager, ThreadPool, AsyncHandle
 │   ├── pool/                   ← ObjectPool, PoolManager, Poolable
@@ -46,15 +33,31 @@
 │   ├── ui/                     ← UISystem, UINode tree, all Widgets
 │   ├── physics/                ← PhysicsWorld2D, RigidBody2D, Collider2D
 │   └── utils/                  ← Logger, EventBus, Math2D, UUID, Serializer
-├── src/
-│   └── main.cpp                ← game entry point
+├── game/                       ← all game data and code
+│   ├── config/                 ← JSON data files (loaded via app.Init("game"))
+│   │   ├── settings.json       ← window, audio, gameplay prefs
+│   │   ├── keybinds.json       ← action → key mappings
+│   │   ├── ui_theme.json       ← colors, fonts, sizes
+│   │   ├── game_config.json    ← player/enemy/world values
+│   │   ├── assets.json         ← ALL asset IDs + paths (relative to game/)
+│   │   └── scenes.json         ← scene registry
+│   ├── assets/
+│   │   ├── textures/           ← real textures (delivered by artist)
+│   │   ├── sounds/             ← real audio
+│   │   ├── fonts/              ← real fonts
+│   │   └── placeholder/        ← auto-generated at SplashScene
+│   └── src/                    ← game source (yours to edit)
+│       ├── main.cpp
+│       ├── assets/             ← AssetIDs.hpp (game-owned, not in engine/)
+│       ├── dev/                ← TextureBaker, SoundComposer
+│       ├── scenes/             ← SplashScene, MainMenuScene, GameplayScene
+│       └── ui/
 └── vendor/
     ├── raylib/
     ├── entt/
     ├── box2d/
     ├── spdlog/
     └── nlohmann_json/
-
 ```
 
 ---
@@ -114,16 +117,14 @@
 - `engine/physics/PhysicsSystem2D` — Box2D shape leak fixed (unique_ptr per entity)
 - `engine/scene/Scene.hpp` — `virtual Registry* GetRegistry()` for debug overlay
 - `engine/ecs/components/Tags.hpp` — IsBullet, IsParticle
-- `src/assets/AssetIDs.hpp` — all game asset ID constants (game-layer, edit freely)
-- `src/dev/TextureBaker` — game-provided texture placeholder generator
-- `src/dev/SoundComposer` — game-provided sound placeholder generator
-- `src/scenes/SplashScene` — registers bakers, calls BakeMissing(), transitions to MainMenu
-- `src/factories/` — PlayerFactory, EnemyFactory, BulletFactory, ParticleFactory (all header-only)
-- `src/ui/GameHUD.hpp` — UICanvas subclass with live HP display
-- `src/scenes/PauseScene` — overlay pushed on GameScene; Resume/Quit
-- `src/scenes/GameScene` — full game scene wiring all ECS systems
+- `game/src/assets/AssetIDs.hpp` — all game asset ID constants (game-layer, edit freely)
+- `game/src/dev/TextureBaker` — game-provided texture placeholder generator
+- `game/src/dev/SoundComposer` — game-provided sound placeholder generator
+- `game/src/scenes/SplashScene` — registers bakers, calls BakeMissing(), transitions to MainMenu
+- `game/src/scenes/MainMenuScene` — main menu with UICanvas and scene transition
+- `game/src/scenes/GameplayScene` — full game scene with inline custom components, ObjectPool
 
-**Always read `docs/Phase6.md` before implementing Phase 6 code.**
+**Phase docs (Phase0–7.md) have been removed — all phases are complete.**
 **Always read `docs/Phase7.md` before implementing Phase 7 code.**
 
 ---
@@ -273,7 +274,7 @@ ID (string constant)
 
 ### Config Reading Pattern
 ```
-JSON file (config/*.json)
+JSON file (game/config/*.json)
   → Serializer::LoadFile(path)
     → DataManager owns the Json object
       → specific DB (SettingsDB, ThemeDB etc) parses it
@@ -382,13 +383,13 @@ Every frame, in this exact order:
 
 ```
 MISSING     → needs baking; SplashScene calls BakeMissing() with registered bakers
-PLACEHOLDER → baked file exists in assets/placeholder/
-REAL        → real artist file exists in assets/textures/ etc
+PLACEHOLDER → baked file exists in game/assets/placeholder/
+REAL        → real artist file exists in game/assets/textures/ etc
 
 AssetTracker auto-detects status by checking disk.
 Status is re-scanned on every engine startup.
 No manual status flags anywhere.
-Baker callbacks registered by game code (src/scenes/SplashScene.cpp).
+Baker callbacks registered by game code (game/src/scenes/SplashScene.cpp).
 ```
 
 ---
@@ -448,12 +449,15 @@ Baker callbacks registered by game code (src/scenes/SplashScene.cpp).
 ## How To Add a New Asset
 
 ```
-1. Add entry to config/assets.json
-2. Add constant to src/assets/AssetIDs.hpp  (game layer — edit freely)
-3. Customise placeholder output in src/dev/TextureBaker.cpp (texture)
-   or src/dev/SoundComposer.cpp (sound) if the default isn't sufficient
+1. Add entry to game/config/assets.json
+   - "id": "tex.my.thing", "type": "TEXTURE"
+   - "real": "assets/textures/my_thing.png"      ← relative to game/
+   - "placeholder": "assets/placeholder/my_thing.png"
+2. Add constant to game/src/assets/AssetIDs.hpp  (game layer — edit freely)
+3. Customise placeholder output in game/src/dev/TextureBaker.cpp (texture)
+   or game/src/dev/SoundComposer.cpp (sound) if the default isn't sufficient
 4. Use in code via ResourceManager::Load(Assets::YOUR_ID)
-5. Drop real file in assets/textures/ or assets/sounds/
+5. Drop real file in game/assets/textures/ or game/assets/sounds/
    when artist delivers — status auto-promotes to REAL
 ```
 
@@ -462,8 +466,8 @@ Baker callbacks registered by game code (src/scenes/SplashScene.cpp).
 ## How To Add a New Scene
 
 ```
-1. Add entry to config/scenes.json
-2. Create src/scenes/YourScene.hpp + YourScene.cpp
+1. Add entry to game/config/scenes.json
+2. Create game/src/scenes/YourScene.hpp + YourScene.cpp
 3. Inherit from Zhenzhu::Scene
 4. Override OnEnter, OnExit, OnPause, OnResume, Update, Render
 5. Register in SceneManager

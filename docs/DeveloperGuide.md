@@ -62,19 +62,25 @@ New subdirectory? Add a matching `Glob('build/game/src/yourfolder/*.cpp')` line.
 ## 2. Project Layout
 
 ```
-game/src/
-├── main.cpp                ← game entry point (do not restructure)
-├── assets/                 ← AssetIDs.hpp (game-owned constants)
-├── dev/                    ← TextureBaker.cpp/.hpp, SoundComposer.cpp/.hpp
-├── scenes/                 ← one .hpp + .cpp per scene
-└── ui/                     ← custom UICanvas subclasses (e.g. GameHUD)
-
-config/                     ← all tunable data (JSON, no hardcoded values)
-assets/
-├── textures/               ← real textures (artist-delivered)
-├── sounds/                 ← real audio files
-├── fonts/                  ← real fonts
-└── placeholder/            ← auto-generated at startup if real file is missing
+game/
+├── src/
+│   ├── main.cpp            ← game entry point (do not restructure)
+│   ├── assets/             ← AssetIDs.hpp (game-owned constants)
+│   ├── dev/                ← TextureBaker.cpp/.hpp, SoundComposer.cpp/.hpp
+│   ├── scenes/             ← one .hpp + .cpp per scene
+│   └── ui/                 ← custom UICanvas subclasses (e.g. GameHUD)
+├── config/                 ← all tunable data (JSON, no hardcoded values)
+│   ├── settings.json
+│   ├── assets.json
+│   ├── keybinds.json
+│   ├── ui_theme.json
+│   ├── game_config.json
+│   └── scenes.json
+└── assets/
+    ├── textures/           ← real textures (artist-delivered)
+    ├── sounds/             ← real audio files
+    ├── fonts/              ← real fonts
+    └── placeholder/        ← auto-generated at startup if real file is missing
 ```
 
 ---
@@ -122,20 +128,22 @@ LOG_DEBUG("dt = " + std::to_string(dt));  // stripped in release builds
 
 ## 4. Adding Assets
 
-### Step 1 — Register in `config/assets.json`
+### Step 1 — Register in `game/config/assets.json`
 
 ```json
 {
   "assets": [
     {
       "id":          "tex.my.sprite",
-      "realPath":    "assets/textures/my_sprite.png",
-      "placeholder": "assets/placeholder/tex_my_sprite.png",
-      "type":        "texture"
+      "type":        "TEXTURE",
+      "real":        "assets/textures/my_sprite.png",
+      "placeholder": "assets/placeholder/tex_my_sprite.png"
     }
   ]
 }
 ```
+
+Paths under `"real"` and `"placeholder"` are relative to `game/` — they are automatically prefixed with the game root at runtime. Real textures go in `game/assets/textures/`, placeholders land in `game/assets/placeholder/`. Type must be uppercase: `TEXTURE`, `FONT`, `SOUND`, `MUSIC`, `DATA`.
 
 ### Step 2 — Add constant to `game/src/assets/AssetIDs.hpp`
 
@@ -170,7 +178,8 @@ registered callbacks — it has no built-in placeholder logic of its own.
 // game/src/scenes/SplashScene.cpp — already wired
 tracker->RegisterTextureBaker(TextureBaker::BakePlaceholder);
 tracker->RegisterSoundBaker  (SoundComposer::BakePlaceholder);
-tracker->BakeMissing();
+tracker->BakeMissing();           // bake only MISSING assets (default)
+tracker->BakeMissing(true);      // force-rebake ALL assets
 ```
 
 ### Asset types
@@ -187,7 +196,7 @@ tracker->BakeMissing();
 
 ## 5. Config & Data
 
-All game values live in `config/`. Never hardcode speeds, sizes, or colours.
+All game values live in `game/config/`. Never hardcode speeds, sizes, or colours.
 
 ### Reading game config (`config/game_config.json`)
 
@@ -210,12 +219,12 @@ Available DB accessors on `DataManager`:
 
 | Member | JSON file | Purpose |
 |---|---|---|
-| `settings` | `config/settings.json` | Window size, audio volumes |
-| `keybinds` | `config/keybinds.json` | Action → key mappings |
-| `theme` | `config/ui_theme.json` | UI colors, font sizes |
-| `gameConfig` | `config/game_config.json` | All game-specific tuning |
-| `assets` | `config/assets.json` | Asset registry |
-| `scenes` | `config/scenes.json` | Scene registry |
+| `settings` | `game/config/settings.json` | Window size, audio volumes |
+| `keybinds` | `game/config/keybinds.json` | Action → key mappings |
+| `theme` | `game/config/ui_theme.json` | UI colors, font sizes |
+| `gameConfig` | `game/config/game_config.json` | All game-specific tuning |
+| `assets` | `game/config/assets.json` | Asset registry |
+| `scenes` | `game/config/scenes.json` | Scene registry |
 
 ### Hot reload (debug only)
 
@@ -464,7 +473,7 @@ m_RenderSys.Render(m_Registry, *renderer);
 
 ### Checking named actions (preferred)
 
-Actions are configured in `config/keybinds.json`. Use them by name:
+Actions are configured in `game/config/keybinds.json`. Use them by name:
 
 ```cpp
 #include "input/InputManager.hpp"
@@ -503,12 +512,21 @@ bool leftBtn  = input->GetMouse().IsDown(MOUSE_BUTTON_LEFT);
 
 auto* renderer = ServiceLocator::Get<Renderer2D>();
 
-renderer->DrawSprite(texture, {x, y});
-renderer->DrawSpriteEx(texture, srcRect, destRect, origin, rotation, tint);
-renderer->DrawText("Hello", {x, y}, fontSize, color);
+// Sprites
+renderer->DrawSprite(texture, pos);                              // simple
+renderer->DrawTexture(texture, destRect);                        // stretched
+renderer->DrawTextureNPatch(texture, patch, destRect);           // 9-slice
+renderer->DrawSpriteEx(texture, srcRect, pos, origin, rotation, scale, tint);
+
+// Text
+renderer->DrawText(font, "Hello", pos, size, spacing, color);
+renderer->DrawTextSimple("Hello", pos, size, color);             // uses default font
+
+// Primitives
 renderer->DrawRect({x, y, w, h}, color);
+renderer->DrawRectLines({x, y, w, h}, thick, color);
 renderer->DrawCircle({cx, cy}, radius, color);
-renderer->DrawLine({x1, y1}, {x2, y2}, color);
+renderer->DrawLine({x1, y1}, {x2, y2}, thick, color);
 ```
 
 The `Renderer2D::Begin()` / `End()` calls are handled by `Application` — never call them
@@ -593,23 +611,28 @@ audio->UnmuteBus("sfx");
 void MyScene::OnEnter() {
     auto* ui = ServiceLocator::Get<UISystem>();
 
-    // Panel — container with flex layout
+    // Panel — parchment background, flex column layout
     auto panel = std::make_unique<UIPanel>();
-    panel->size        = { 400.f, 300.f };
-    panel->anchor      = Anchor::Center;
-    panel->useLayout   = true;
-    panel->layout.direction = FlexDirection::Column;
-    panel->layout.spacing   = 16.f;
-    panel->layout.padding   = 24.f;
+    panel->size                = { 400.f, 300.f };
+    panel->anchor              = Anchor::Center;
+    panel->backgroundTexture   = Assets::TEX_UI_PANEL_PARCHMENT; // asset ID string
+    panel->useLayout           = true;
+    panel->layout.direction    = FlexDirection::Column;
+    panel->layout.spacing      = 16.f;
+    panel->layout.padding      = 24.f;
 
     // Label
     auto title = std::make_unique<UILabel>("GAME OVER");
     title->fontSize = ui->GetTheme().FontSizeTitle();
     title->color    = ui->GetTheme().Primary();
 
-    // Button with click handler
+    // Button with texture states + sounds + click handler
     auto btn = std::make_unique<UIButton>("RETRY");
-    btn->size    = { 200.f, 48.f };
+    btn->size           = { 200.f, 48.f };
+    btn->textureNormal  = Assets::TEX_UI_BUTTON_NORMAL;   // asset ID string
+    btn->textureHover   = Assets::TEX_UI_BUTTON_HOVER;    // asset ID string
+    btn->texturePressed = Assets::TEX_UI_BUTTON_PRESSED;  // asset ID string
+    btn->soundHover     = Assets::SFX_UI_HOVER;           // asset ID string
     btn->onClick = []() {
         auto* sm = ServiceLocator::Get<SceneManager>();
         sm->Switch(std::make_unique<GameScene>(), std::make_unique<FadeTransition>());
@@ -636,11 +659,13 @@ void MyScene::OnEnter() {
 |---|---|
 | `UILabel` | `text`, `fontSize`, `color`, `anchor` |
 | `UIImage` | `textureId` (asset ID string), `size`, `anchor` |
-| `UIPanel` | `size`, `anchor`, `useLayout`, `layout` (FlexLayout) |
-| `UIButton` | `label`, `size`, `anchor`, `onClick` (callback) |
+| `UIPanel` | `size`, `anchor`, `backgroundColor` (Color4), `backgroundTexture` (asset ID string), `drawBorder`, `borderColor`, `borderThick`, `useLayout`, `layout` (FlexLayout) |
+| `UIButton` | `label`, `size`, `anchor`, `textureNormal` / `textureHover` / `texturePressed` (asset ID strings), `soundHover` / `soundClick` (asset ID strings), `onClick` (callback), `animator` (UIAnimator) |
 | `UISlider` | `value`, `min`, `max`, `size`, `onChange` (callback) |
 | `UIScrollView` | `size`, `anchor` — add children, scroll with mouse wheel |
 | `UITextInput` | `text`, `placeholder`, `size`, `onChange` (callback) |
+
+> **Texture fields on UIPanel and UIButton accept asset ID strings** (e.g. `Assets::TEX_UI_BUTTON_NORMAL`), not raw `Texture2D` objects. The widget loads and caches through `ResourceManager` internally. Leave a field empty (`""`) to use the theme default.
 
 ### UICanvas subclass (for custom HUDs)
 
