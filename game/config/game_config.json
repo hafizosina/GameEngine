@@ -7,10 +7,11 @@
     },
     "enemies": {
         "slime": {
-            "speed": 100.0,
+            "walkSpeed": 60.0,
+            "runSpeed": 200.0,
             "health": 30,
-            "damage": 3,
-            "detectionRadius": 200.0
+            "damage": 10,
+            "detectionRadius": 400.0
         },
         "boss": {
             "speed": 120.0,

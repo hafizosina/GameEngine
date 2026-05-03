@@ -20,13 +20,15 @@
 namespace Zhenzhu {
 
 struct EnemyAI {
-    float speed = 100.f;
+    float walkSpeed = 50.f;
+    float runSpeed  = 120.f;
 };
 
 inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
 {
     auto* dm = ServiceLocator::Get<DataManager>();
-    float speed          = dm->gameConfig.GetFloat("enemies.slime.speed",          100.f);
+    float walkSpeed      = dm->gameConfig.GetFloat("enemies.slime.walkSpeed",      60.f);
+    float runSpeed       = dm->gameConfig.GetFloat("enemies.slime.runSpeed",       130.f);
     int   health         = dm->gameConfig.GetInt  ("enemies.slime.health",          30);
     int   damage         = dm->gameConfig.GetInt  ("enemies.slime.damage",           3);
     float detectionRange = dm->gameConfig.GetFloat("enemies.slime.detectionRadius", 200.f);
@@ -34,7 +36,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     Entity e = reg.CreateEntity();
     reg.Emplace<Transform2D>(e, pos);
     reg.Emplace<Velocity2D>(e);
-    reg.Emplace<EnemyAI>(e, EnemyAI{speed});
+    reg.Emplace<EnemyAI>(e, EnemyAI{walkSpeed, runSpeed});
     reg.Emplace<IsEnemy>(e);
     reg.Emplace<IsTrigger>(e);
     reg.Emplace<Health>(e, Health{health, health, {}});
@@ -57,8 +59,8 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         0, "Wander",
         nullptr,
         [](entt::registry& r, Entity self, float dt) {
-            float spd = r.get<EnemyAI>(self).speed;
-            AIBehaviors::Wander(r, self, dt, spd * 0.5f);
+            float spd = r.get<EnemyAI>(self).walkSpeed;
+            AIBehaviors::Wander(r, self, dt, spd);
             AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
         },
         nullptr
@@ -69,7 +71,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         1, "Chase",
         [](entt::registry& r, Entity self, float) { AIBehaviors::FindInSensor<IsPlayer>(r, self); },
         [](entt::registry& r, Entity self, float dt) {
-            float spd = r.get<EnemyAI>(self).speed;
+            float spd = r.get<EnemyAI>(self).runSpeed;
             AIBehaviors::SeekTarget(r, self, dt, spd);
             AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
         },
