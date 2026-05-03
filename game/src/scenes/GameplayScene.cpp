@@ -45,10 +45,10 @@ void GameplayScene::OnEnter()
     Sprite& playerSprite = m_Registry.Emplace<Sprite>(m_Player, rm->LoadTexture(Assets::TEX_PLAYER));
     playerSprite.origin = {32, 32};
 
-    Collider2D& playerCol = m_Registry.Emplace<Collider2D>(m_Player);
-    playerCol.shape = ColliderShape::Circle;
-    playerCol.size = {24, 24};
-    playerCol.offset = {0, 0};
+    m_Registry.Emplace<Collider2D>(m_Player, Collider2D{
+        .shape = ColliderShape::Circle,
+        .size  = {24, 24},
+    });
 
     m_BulletPool.PreWarm(30);
 }
@@ -164,9 +164,10 @@ void GameplayScene::SpawnEnemy()
     Sprite& enemySprite = m_Registry.Emplace<Sprite>(enemy, rm->LoadTexture(Assets::TEX_ENEMY));
     enemySprite.origin = {32, 32};
 
-    Collider2D& enemyCol = m_Registry.Emplace<Collider2D>(enemy);
-    enemyCol.shape = ColliderShape::Circle;
-    enemyCol.size = {20, 20};
+    m_Registry.Emplace<Collider2D>(enemy, Collider2D{
+        .shape = ColliderShape::Circle,
+        .size  = {20, 20},
+    });
 }
 
 void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
@@ -194,9 +195,10 @@ void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
     Sprite& bSprite = m_Registry.Emplace<Sprite>(bulletObj->entity, rm->LoadTexture(Assets::TEX_BULLET));
     bSprite.origin = {16, 16};
 
-    Collider2D& bCol = m_Registry.Emplace<Collider2D>(bulletObj->entity);
-    bCol.shape = ColliderShape::Circle;
-    bCol.size = {8, 8};
+    m_Registry.Emplace<Collider2D>(bulletObj->entity, Collider2D{
+        .shape = ColliderShape::Circle,
+        .size  = {8, 8},
+    });
 
     m_ActiveBullets.push_back(bulletObj);
 }
