@@ -1,9 +1,9 @@
 # Zhenzhu Engine — Developer Guide
 
-> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
-> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `4b6b03e` — *refactor: remove unused window header and clean up formatting in MainMenuScene*  
+> To re-sync: `git log 4b6b03e..HEAD --oneline` shows what changed since this doc was written.
 
-**Engine version**: Phase 7 (complete)  
+**Engine version**: Phase 8 (complete)  
 **Language**: C++20 · **Build**: SCons · **Namespace**: `Zhenzhu`
 
 This guide explains how to use the engine as a game developer. It assumes the engine itself is
@@ -21,7 +21,7 @@ in `engine/` is read-only.
 5. [Config & Data](#5-config--data)
 6. [Scenes & Transitions](#6-scenes--transitions)
 7. [Entity Component System (ECS)](#7-entity-component-system-ecs)
-8. [FSM (Finite State Machine)](#8-fsm-finite-state-machine)
+8. [AI Systems — FSM, GOAP, Utility AI](#8-ai-systems--fsm-goap-utility-ai)
 9. [Input](#9-input)
 10. [Rendering & Camera](#10-rendering--camera)
 11. [Audio](#11-audio)
@@ -68,6 +68,7 @@ game/
 │   ├── main.cpp            ← game entry point (do not restructure)
 │   ├── assets/             ← AssetIDs.hpp (game-owned constants)
 │   ├── dev/                ← TextureBaker.cpp/.hpp, SoundComposer.cpp/.hpp
+│   ├── entities/           ← entity factory headers (PlayerEntity, EnemyEntity, BulletEntity)
 │   ├── scenes/             ← one .hpp + .cpp per scene
 │   └── ui/                 ← custom UICanvas subclasses (e.g. GameHUD)
 ├── config/                 ← all tunable data (JSON, no hardcoded values)
@@ -366,19 +367,27 @@ m_Registry.Emplace<IsPlayer>(e);                  // tag — no data
 |---|---|---|
 | `Transform2D` | `position`, `rotation`, `scale` | World-space position |
 | `Velocity2D` | `linear` (Vec2), `angular` (float) | Applied by MovementSystem2D |
-| `Health` | `current`, `max` | Modified by HealthSystem |
+| `Health` | `current`, `max`, `onDied` | `onDied` = null → auto-destroy; set → custom cleanup (pool return etc.) |
+| `DealsDamage` | `amount` | Pair with `IsTrigger` + `Contacts`; processed by DamageOnContactSystem |
+| `Contacts` | `entities[16]`, `count` | Written by CollisionSystem2D each frame — poll instead of EventBus |
+| `Target` | `entity`, `position`, `hasTarget`, `radius` | AI targeting — tracks another entity or a world position |
 | `Sprite` | `texture` (Texture2D), `tint`, `srcRect`, `origin`, `layer` | Drawn by RenderSystem2D |
 | `Animator` | `frames`, `fps`, `currentFrame`, `timer` | Driven by AnimationSystem |
-| `Collider2D` | `shape` (Box/Circle), `size`, `offset`, `isTrigger` | Used by PhysicsSystem2D |
+| `Collider2D` | `shape` (Box/Circle), `size`, `offset`, `isTrigger`, `debugColor` | `debugColor` overrides per-entity overlay color in F1 debug view |
 | `RigidBody2D` | `type` (Static/Dynamic/Kinematic), `density`, `friction`, `restitution` | Box2D body |
 | `AudioSource` | `soundId`, `volume`, `bus`, `playOnSpawn` | |
 | `Script` | `update` (lambda) | Arbitrary per-entity logic |
+| `FiniteStateMachine` | `states`, `transitions`, `currentState` | FSM driven by FSMSystem |
+| `GOAPAgent` | `goals`, `actions`, `activeGoal`, `activeAction` | GOAP driven by GOAPSystem |
+| `UtilityAIAgent` | `actions`, `activeAction`, `hysteresis`, `reselectCooldown` | Scored actions driven by UtilityAISystem |
 
 ### Tag components (empty structs — no data)
 
 ```cpp
 IsPlayer, IsEnemy, IsDead, IsGrounded, IsTrigger, IsStatic, IsBullet, IsParticle
 ```
+
+Attach `IsTrigger` to any entity that should have its overlaps tracked in `Contacts`.
 
 ### Querying components in a system
 
@@ -418,7 +427,7 @@ m_Registry.Emplace<Script>(bullet, Script{
 
 ### Factories — preferred pattern for spawning
 
-Put spawning code in `game/src/factories/YourFactory.hpp` (header-only):
+Put spawning code in `game/src/entities/YourEntity.hpp` (header-only):
 
 ```cpp
 #pragma once
@@ -429,7 +438,7 @@ Put spawning code in `game/src/factories/YourFactory.hpp` (header-only):
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 
-namespace Zhenzhu::Factories {
+namespace Zhenzhu {
 
 inline Entity CreateCoin(Registry& reg, ResourceManager& rm, Vec2 pos) {
     Entity e = reg.CreateEntity();
@@ -451,15 +460,19 @@ inline Entity CreateCoin(Registry& reg, ResourceManager& rm, Vec2 pos) {
 #include "ecs/systems/RenderSystem2D.hpp"
 #include "ecs/systems/HealthSystem.hpp"
 #include "ecs/systems/ScriptSystem.hpp"
+#include "ecs/systems/CollisionSystem2D.hpp"
+#include "ecs/systems/DamageOnContactSystem.hpp"
+#include "ecs/systems/FSMSystem.hpp"
+#include "ecs/systems/GOAPSystem.hpp"
+#include "ecs/systems/UtilityAISystem.hpp"
 
-MovementSystem2D m_MoveSys;
-AnimationSystem  m_AnimSys;
-RenderSystem2D   m_RenderSys;
-HealthSystem     m_HealthSys;
-ScriptSystem     m_ScriptSys;
-
-// In Update:
-m_MoveSys.Update(m_Registry, dt);
+// Recommended Update order:
+m_CollisionSys.Update(m_Registry);      // 1. populate Contacts
+m_FSMSys.Update(m_Registry, dt);        // 2. AI decides velocity
+m_GOAPSys.Update(m_Registry, dt);       //    (use FSM or GOAP or UtilityAI, not all three)
+m_UtilSys.Update(m_Registry, dt);
+m_MoveSys.Update(m_Registry, dt);       // 3. apply velocity
+m_DamageSys.Update(m_Registry);         // 4. resolve damage (after contacts are populated)
 m_AnimSys.Update(m_Registry, dt);
 m_HealthSys.Update(m_Registry);
 m_ScriptSys.Update(m_Registry, dt);
@@ -470,64 +483,175 @@ m_RenderSys.Render(m_Registry, *renderer);
 
 ---
 
-## 8. FSM (Finite State Machine)
+## 8. AI Systems — FSM, GOAP, Utility AI
 
-Use the `FiniteStateMachine` component for complex entity behavior (AI, boss patterns, stateful interactables). It replaces large if/else blocks and keeps AI logic out of the `Script` component.
+Three composable AI paradigms are available. Use one or combine them per entity.
 
-### When to use FSM vs Script
-- **Script**: One-shot lifetime events (auto-destroy timers, simple flags).
-- **FSM**: Anything with multiple modes (Idle, Chase, Attack, Flee).
+| Paradigm | Best for | Header |
+|---|---|---|
+| **FSM** | Distinct modes (Idle → Chase → Attack) | `ecs/components/FiniteStateMachine.hpp` |
+| **GOAP** | Goal-directed sequences of actions | `ecs/components/GOAPAgent.hpp` |
+| **Utility AI** | Continuous scoring, smooth action blending | `ecs/components/UtilityAIAgent.hpp` |
 
-### Key Types
-- `StateID`: A simple integer representing a state.
-- `FSMAction`: `void(entt::registry&, Entity, float dt)` — Called on `onEnter`, `onUpdate`, `onExit`.
-- `FSMCondition`: `bool(entt::registry&, Entity, float dt)` — Returns true to trigger a transition.
+`AIBehaviors` provides reusable building blocks (seek, separate, find-nearest) that plug into any of the three systems.
 
-### Defining an FSM (Example)
+---
+
+### 8A — FSM (Finite State Machine)
+
+Use `FiniteStateMachine` for anything with discrete modes (Idle, Chase, Attack, Flee).
+
+**Key types**  
+- `StateID` — simple integer state identifier  
+- `FSMAction` — `void(entt::registry&, Entity, float dt)` — called on `onEnter`, `onUpdate`, `onExit`  
+- `FSMCondition` — `bool(entt::registry&, Entity, float dt)` — returns true to fire a transition  
+
 ```cpp
 #include "ecs/components/FiniteStateMachine.hpp"
+#include "ecs/components/AIBehaviors.hpp"
+
+constexpr StateID IDLE  = 0;
+constexpr StateID CHASE = 1;
 
 FiniteStateMachine fsm;
 
-// 1. Add States
-fsm.AddState({ State::IDLE, "Idle",
-    [](entt::registry& r, Entity e, float) { r.get<Velocity2D>(e).linear = {0,0}; }, // onEnter
-    nullptr, // onUpdate
-    nullptr  // onExit
+fsm.AddState({ IDLE, "Idle",
+    [](entt::registry& r, Entity e, float) { r.get<Velocity2D>(e).linear = {0,0}; },
+    nullptr, nullptr
 });
 
-fsm.AddState({ State::CHASE, "Chase",
+fsm.AddState({ CHASE, "Chase",
     nullptr,
-    [](entt::registry& r, Entity e, float dt) { /* move toward player */ },
+    [speed](entt::registry& r, Entity e, float dt) {
+        AIBehaviors::SeekTarget(r, e, dt, speed);
+        AIBehaviors::Separate<IsEnemy>(r, e, 60.f, 80.f);
+    },
     nullptr
 });
 
-// 2. Add Transitions (Insertion order = Evaluation priority)
-fsm.AddTransition({ State::IDLE, State::CHASE,
-    [](entt::registry& r, Entity e, float) {
-        return Math2D::Distance(myPos, playerPos) < aggroRange;
+fsm.AddTransition({ IDLE, CHASE,
+    [aggro](entt::registry& r, Entity e, float) {
+        AIBehaviors::FindNearest<IsPlayer>(r, e);
+        return AIBehaviors::WithinTargetRange(r, e, 0.f);
     }
 });
 
-reg.Emplace<FiniteStateMachine>(entity, std::move(fsm));
+m_Registry.Emplace<FiniteStateMachine>(entity, std::move(fsm));
 ```
 
-### Wiring the System
-Add `FSMSystem` to your scene and call it **before** the movement system.
 ```cpp
-m_FSMSystem.Update(m_Registry, dt);      // 1. Decide new velocity
-m_MoveSys.Update(m_Registry, dt);        // 2. Apply velocity
+// In scene Update (before MovementSystem):
+m_FSMSystem.Update(m_Registry, dt);
+m_MoveSys.Update(m_Registry, dt);
 ```
 
-### Tips
-- **Hysteresis**: Make "leave range" slightly larger (e.g. 1.2x) than "enter range" to prevent flickering.
-- **Evaluation Order**: Transitions are checked in the order they were added.
-- **Global Transitions**: Use `from = FSM_NULL_STATE` for transitions that can fire from any state (e.g. Low HP → Flee).
+**Tips**  
+- Transitions are evaluated in insertion order — put high-priority transitions first.  
+- Use `from = FSM_NULL_STATE` for global transitions (e.g. low-HP → Flee from any state).  
+- Hysteresis: make the "exit" distance slightly larger than "enter" to stop flickering.
 
-| System | Role |
-|---|---|
-| **FSM** | Which *mode* is the entity in? |
-| **UtilityAI** | Which *action* within that mode? (Planned) |
+---
+
+### 8B — GOAP (Goal-Oriented Action Planning)
+
+Use `GOAPAgent` when the entity must sequence actions to satisfy a goal.  
+`GOAPSystem` picks the highest-priority unsatisfied goal, finds the cheapest valid action, and drives it.
+
+```cpp
+#include "ecs/components/GOAPAgent.hpp"
+
+GOAPAgent agent;
+
+agent.AddGoal({
+    "Survive", /*priority*/ 2.f,
+    [](entt::registry& r, Entity e) {
+        return r.get<Health>(e).current > 30;   // satisfied when HP is high
+    }
+});
+
+agent.AddAction({
+    "Flee",
+    /*cost*/ 1.f,
+    /*precond*/ [](entt::registry& r, Entity e) {
+        return r.get<Health>(e).current <= 30;
+    },
+    /*effect*/ [](entt::registry& r, Entity e) {
+        return r.get<Health>(e).current > 30;
+    },
+    /*onUpdate*/ [](entt::registry& r, Entity e, float dt) {
+        // move away from nearest threat
+    },
+    /*onEnter*/ nullptr,
+    /*onExit*/  nullptr,
+});
+
+m_Registry.Emplace<GOAPAgent>(entity, std::move(agent));
+```
+
+```cpp
+// In scene Update:
+m_GOAPSystem.Update(m_Registry, dt);
+m_MoveSys.Update(m_Registry, dt);
+```
+
+---
+
+### 8C — Utility AI
+
+Use `UtilityAIAgent` for continuous action selection based on scored desirability.  
+`UtilityAISystem` scores every action each frame and switches when the gap exceeds `hysteresis`.
+
+```cpp
+#include "ecs/components/UtilityAIAgent.hpp"
+
+UtilityAIAgent agent;
+agent.hysteresis = 0.1f;   // prevents rapid flickering
+
+agent.AddAction({
+    "Chase",
+    /*score*/ [](entt::registry& r, Entity e) -> float {
+        // Returns 0..1. Higher = more desirable right now.
+        float dist = Math2D::Distance(...);
+        return 1.f - std::clamp(dist / 400.f, 0.f, 1.f);
+    },
+    /*onUpdate*/ [speed](entt::registry& r, Entity e, float dt) {
+        AIBehaviors::SeekTarget(r, e, dt, speed);
+    },
+    nullptr, nullptr
+});
+
+m_Registry.Emplace<UtilityAIAgent>(entity, std::move(agent));
+```
+
+```cpp
+// In scene Update:
+m_UtilSys.Update(m_Registry, dt);
+m_MoveSys.Update(m_Registry, dt);
+```
+
+---
+
+### AIBehaviors — reusable leaf functions
+
+All methods are `static`. Pass them directly into FSM `onUpdate` / GOAP `onUpdate` / Utility `onUpdate`.
+
+```cpp
+#include "ecs/components/AIBehaviors.hpp"
+
+// Move toward Target component at speed px/s
+AIBehaviors::SeekTarget(reg, entity, dt, speed);
+
+// Returns true if entity is within its Target.radius
+AIBehaviors::WithinTargetRange(reg, entity, dt);
+
+// Set Target to nearest entity with given tag
+AIBehaviors::FindNearest<IsPlayer>(reg, entity);
+
+// Steer away from same-tag neighbours within radius, weighted by distance
+AIBehaviors::Separate<IsEnemy>(reg, entity, /*radius*/ 60.f, /*strength*/ 80.f);
+```
+
+> `Separate` is O(n²) — fine up to a few hundred entities. For large crowds, use a spatial grid.
 
 ---
 
@@ -594,6 +718,26 @@ renderer->DrawLine({x1, y1}, {x2, y2}, thick, color);
 The `Renderer2D::Begin()` / `End()` calls are handled by `Application` — never call them
 yourself from scene code.
 
+#### Fixed-resolution rendering & letterboxing
+
+The renderer draws into a fixed-size render texture (game resolution from `settings.json`) then
+composites it centered on the real screen with black bars. Sprites are always 1:1 — the window
+can be resized or go fullscreen without stretching the game image.
+
+When converting raw mouse coordinates to game space, subtract the viewport offset:
+
+```cpp
+auto* renderer = ServiceLocator::Get<Renderer2D>();
+auto* input    = ServiceLocator::Get<InputManager>();
+
+Vec2 rawMouse  = input->GetMouse().GetPosition();
+Vec2 gamePos   = rawMouse - renderer->GetViewportOffset();   // game-space coords
+
+// Game resolution (same as settings.json display.width / height):
+int gameW = renderer->GetGameWidth();
+int gameH = renderer->GetGameHeight();
+```
+
 ### Camera2D
 
 ```cpp
@@ -602,10 +746,11 @@ yourself from scene code.
 
 Camera2D m_Camera;
 
-// Once in OnEnter:
-float sw = (float)GetScreenWidth();
-float sh = (float)GetScreenHeight();
-m_Camera.Init({playerX, playerY}, {sw * 0.5f, sh * 0.5f}, /*zoom*/ 1.f);
+// Once in OnEnter — use game resolution, not screen size:
+auto* renderer = ServiceLocator::Get<Renderer2D>();
+float gw = (float)renderer->GetGameWidth();
+float gh = (float)renderer->GetGameHeight();
+m_Camera.Init({playerX, playerY}, {gw * 0.5f, gh * 0.5f}, /*zoom*/ 1.f);
 
 // Every frame in Update:
 m_Camera.Follow(playerPosition, /*lerpSpeed*/ 5.f, dt);
