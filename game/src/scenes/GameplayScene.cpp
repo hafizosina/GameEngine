@@ -81,7 +81,7 @@ void GameplayScene::Update(float dt)
     m_SensorSystem.Update(m_Registry);       // populate sensor hits first
     m_FSMSystem.Update(m_Registry, dt);      // AI reads sensor, decides velocity
     m_MovementSystem.Update(m_Registry, dt);
-    m_WallCollision.Update(m_Registry);      // resolve movers out of walls
+    m_SolidCollision.Update(m_Registry);     // resolve all solid-vs-solid overlaps
     m_CollisionSystem.Update(m_Registry);
     m_DamageSystem.Update(m_Registry);
 }

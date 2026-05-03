@@ -7,6 +7,7 @@
 #include "ecs/components/Health.hpp"
 #include "ecs/components/DealsDamage.hpp"
 #include "ecs/components/Tags.hpp"
+#include "ecs/components/SolidObject.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 #include "utils/Logger.hpp"
@@ -43,6 +44,7 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
         .shape = ColliderShape::Circle,
         .size  = {24, 24},
     });
+    reg.Emplace<SolidObject>(e);
 
     return e;
 }

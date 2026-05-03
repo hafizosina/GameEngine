@@ -5,6 +5,7 @@
 #include "ecs/Registry.hpp"
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Collider2D.hpp"
+#include "ecs/components/Sensor.hpp"
 #include "assets/AssetTracker.hpp"
 #include "utils/FrameProfiler.hpp"
 #include <string>
@@ -45,24 +46,51 @@ public:
         ::DrawFPS((int)pos.x, (int)pos.y);
     }
 
-    // Draw wire colliders for every entity with Transform2D + Collider2D.
-    // Each collider uses its own debugColor — override per entity for custom colours.
+    // Draw debug shapes for every Collider2D and Sensor in the registry.
+    //   Collider2D — uses col.debugColor (override per entity in factory)
+    //   Sensor     — always drawn cyan so it's visually distinct
     static void DrawColliders(Renderer2D& r, Registry& reg) {
-        auto view = reg.View<Transform2D, Collider2D>();
-        for (auto [entity, transform, col] : view.each()) {
-            Vec2 origin = {
+        // ── Collider2D ────────────────────────────────────────────────
+        for (auto [e, transform, col] : reg.View<Transform2D, Collider2D>().each()) {
+            Vec2 center = {
                 transform.position.x + col.offset.x,
                 transform.position.y + col.offset.y
             };
             if (col.shape == ColliderShape::Box) {
                 Rect rect = {
-                    origin.x - col.size.x * 0.5f,
-                    origin.y - col.size.y * 0.5f,
+                    center.x - col.size.x * 0.5f,
+                    center.y - col.size.y * 0.5f,
                     col.size.x, col.size.y
                 };
-                r.DrawRectLines(rect, 1.f, col.debugColor);
+                r.DrawRect(rect, {col.debugColor.r, col.debugColor.g,
+                                  col.debugColor.b, 40});          // faint fill
+                r.DrawRectLines(rect, 2.f, col.debugColor);        // 2px outline
             } else {
-                r.DrawCircle(origin, col.size.x, col.debugColor);
+                r.DrawCircle(center, col.size.x, col.debugColor);  // transparent fill
+            }
+        }
+
+        // ── Sensor ────────────────────────────────────────────────────
+        // Cyan, more transparent than colliders — sensor range is large
+        constexpr Color4 kSensorFill    = {0, 200, 255, 20};
+        constexpr Color4 kSensorOutline = {0, 200, 255, 140};
+
+        for (auto [e, transform, sensor] : reg.View<Transform2D, Sensor>().each()) {
+            Vec2 center = {
+                transform.position.x + sensor.offset.x,
+                transform.position.y + sensor.offset.y
+            };
+            if (sensor.shape == ColliderShape::Circle) {
+                r.DrawCircle(center, sensor.size.x, kSensorFill);
+                r.DrawCircleLines(center, sensor.size.x, 2.f, kSensorOutline);
+            } else {
+                Rect rect = {
+                    center.x - sensor.size.x * 0.5f,
+                    center.y - sensor.size.y * 0.5f,
+                    sensor.size.x, sensor.size.y
+                };
+                r.DrawRect(rect, kSensorFill);
+                r.DrawRectLines(rect, 2.f, kSensorOutline);
             }
         }
     }

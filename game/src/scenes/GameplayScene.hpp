@@ -6,7 +6,7 @@
 #include "ecs/systems/DamageOnContactSystem.hpp"
 #include "ecs/systems/FSMSystem.hpp"
 #include "ecs/systems/SensorSystem.hpp"
-#include "ecs/systems/WallCollisionSystem.hpp"
+#include "ecs/systems/SolidCollisionSystem.hpp"
 #include "entities/PlayerEntity.hpp"
 #include "entities/EnemyEntity.hpp"
 #include "entities/BulletEntity.hpp"
@@ -30,7 +30,7 @@ private:
     RenderSystem2D                  m_RenderSystem;
     MovementSystem2D                m_MovementSystem;
     SensorSystem                    m_SensorSystem;
-    WallCollisionSystem<WallTag>    m_WallCollision;
+    SolidCollisionSystem            m_SolidCollision;
     CollisionSystem2D               m_CollisionSystem;
     DamageOnContactSystem           m_DamageSystem;
     FSMSystem                       m_FSMSystem;

@@ -1,14 +1,26 @@
 #pragma once
-#include <algorithm>
 #include <limits>
+#include <cmath>
+#include <random>
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Velocity2D.hpp"
 #include "ecs/components/Target.hpp"
 #include "ecs/components/Sensor.hpp"
+#include "ecs/components/Tags.hpp"
 #include "utils/Math2D.hpp"
 
 namespace Zhenzhu {
 
+// Per-entity wander state — attach alongside other AI components.
+struct WanderBehavior {
+    Vec2  direction   = {1.f, 0.f};
+    float timer       = 0.f;
+    float changeEvery = 2.0f; // seconds between direction changes
+};
+
+// Game-specific steering behaviors. Add new ones here as the game grows.
+// Each method is a self-contained action or condition — plug directly into
+// FSM onEnter/onUpdate/onExit or call from a Script component.
 class AIBehaviors {
 public:
     // ── Seek ─────────────────────────────────────────────────────────
@@ -34,6 +46,37 @@ public:
         vel.linear = (dist > target.radius) ? toTarget.Normalize() * speed : Vec2{0, 0};
     }
 
+    // ── Wander ───────────────────────────────────────────────────────
+    // Moves in a random direction, picks a new one every WanderBehavior.changeEvery seconds.
+    static void Wander(entt::registry& reg, Entity self, float dt, float speed) {
+        if (!reg.all_of<Transform2D, Velocity2D, WanderBehavior>(self)) return;
+        auto& wb  = reg.get<WanderBehavior>(self);
+        auto& vel = reg.get<Velocity2D>(self);
+
+        wb.timer += dt;
+        if (wb.timer >= wb.changeEvery) {
+            wb.timer = 0.f;
+            static std::mt19937 rng(std::random_device{}());
+            std::uniform_real_distribution<float> angleDist(0.f, 6.2831853f);
+            float angle  = angleDist(rng);
+            wb.direction = {std::cos(angle), std::sin(angle)};
+        }
+
+        vel.linear = wb.direction * speed;
+    }
+
+    // ── PlayerInSensor ────────────────────────────────────────────────
+    // FSM condition: true when any entity with IsPlayer is inside the Sensor.
+    static bool PlayerInSensor(entt::registry& reg, Entity self, float /*dt*/) {
+        if (!reg.all_of<Sensor>(self)) return false;
+        auto& sensor = reg.get<Sensor>(self);
+        for (int i = 0; i < sensor.hitCount; ++i) {
+            entt::entity h = sensor.hits[i];
+            if (reg.valid(h) && reg.all_of<IsPlayer>(h)) return true;
+        }
+        return false;
+    }
+
     // ── WithinTargetRange ─────────────────────────────────────────────
     // FSM condition: true when entity is within Target.radius of its target.
     static bool WithinTargetRange(entt::registry& reg, Entity self, float /*dt*/) {
@@ -45,14 +88,9 @@ public:
     }
 
     // ── Separate ──────────────────────────────────────────────────────
-    // Steers away from everything currently in the entity's Sensor hits.
-    // The Sensor's detect predicate decides what counts as a neighbour
-    // (walls, other enemies, or both — set at entity creation time).
-    //
-    // radius   — only hits closer than this contribute steering force.
-    //            Typically match or slightly exceed the sensor's own radius.
-    // strength — how much the repulsion nudges velocity. Keep below seek
-    //            speed for a gentle bias; equal or greater for hard avoidance.
+    // Steers away from everything in the entity's Sensor hits.
+    // radius   — only hits closer than this contribute; match sensor size.
+    // strength — nudge magnitude. Keep below seek speed for a gentle bias.
     static void Separate(entt::registry& reg, Entity self, float radius, float strength) {
         if (!reg.all_of<Transform2D, Velocity2D, Sensor>(self)) return;
 
@@ -65,13 +103,12 @@ public:
 
         for (int i = 0; i < sensor.hitCount; ++i) {
             entt::entity other = sensor.hits[i];
-            if (!reg.valid(other)) continue;
-            if (!reg.all_of<Transform2D>(other)) continue;
+            if (!reg.valid(other) || !reg.all_of<Transform2D>(other)) continue;
 
-            float dist = Math2D::Distance(trans.position,
-                                          reg.get<Transform2D>(other).position);
+            auto& oTrans = reg.get<Transform2D>(other);
+            float dist   = Math2D::Distance(trans.position, oTrans.position);
             if (dist > 0.f && dist < radius) {
-                Vec2 away = (trans.position - reg.get<Transform2D>(other).position).Normalize();
+                Vec2 away = (trans.position - oTrans.position).Normalize();
                 steer = steer + away * (radius - dist);
                 ++count;
             }
@@ -83,8 +120,8 @@ public:
 
     // ── FindNearest ───────────────────────────────────────────────────
     // Sets the entity's Target to the nearest entity with the given tag.
-    // This still does a global scan — targeting decisions happen once per
-    // state enter, not every frame, so the cost is acceptable.
+    // Global scan — call from FSM onEnter (once per state transition),
+    // not from onUpdate (every frame).
     template<typename Tag>
     static void FindNearest(entt::registry& reg, Entity self) {
         if (!reg.all_of<Transform2D, Target>(self)) return;
@@ -102,8 +139,8 @@ public:
         }
 
         if (nearest != NullEntity) {
-            target.entity   = nearest;
-            target.position = reg.get<Transform2D>(nearest).position;
+            target.entity    = nearest;
+            target.position  = reg.get<Transform2D>(nearest).position;
             target.hasTarget = true;
         }
     }

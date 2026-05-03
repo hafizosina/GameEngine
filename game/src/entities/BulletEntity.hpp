@@ -7,6 +7,7 @@
 #include "ecs/components/Health.hpp"
 #include "ecs/components/DealsDamage.hpp"
 #include "ecs/components/Tags.hpp"
+#include "ecs/components/SolidObject.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 #include "pool/ObjectPool.hpp"
@@ -62,6 +63,7 @@ inline Bullet* CreateBullet(Registry& reg, ResourceManager* rm,
         .shape = ColliderShape::Circle,
         .size  = {8, 8},
     });
+    reg.Emplace<SolidObject>(obj->entity);
 
     activeBullets.push_back(obj);
     return obj;

@@ -45,6 +45,7 @@ public:
     void DrawRect(Rect rect, Color4 color);
     void DrawRectLines(Rect rect, float thick, Color4 color);
     void DrawCircle(Vec2 center, float radius, Color4 color);
+    void DrawCircleLines(Vec2 center, float radius, float thick, Color4 color);
     void DrawLine(Vec2 start, Vec2 end, float thick, Color4 color);
 
 private:

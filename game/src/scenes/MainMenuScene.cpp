@@ -61,7 +61,7 @@ void MainMenuScene::OnEnter()
         return btn;
     };
 
-    panel->AddChild(createBtn("NEW WORLD", [this]() {
+    panel->AddChild(createBtn("NEW WORLD", []() {
         LOG_INFO("New World clicked!");
         auto* sm = ServiceLocator::Get<SceneManager>();
         sm->Switch(std::make_unique<GameplayScene>(), std::make_unique<FadeTransition>(1.0f));

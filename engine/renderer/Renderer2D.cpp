@@ -103,6 +103,11 @@ void Renderer2D::DrawLine(Vec2 start, Vec2 end, float thick, Color4 color) {
     DrawLineEx(ToRL(start), ToRL(end), thick, ToRL(color));
 }
 
+void Renderer2D::DrawCircleLines(Vec2 center, float radius, float thick, Color4 color) {
+    ::DrawRing(ToRL(center), radius - thick * 0.5f, radius + thick * 0.5f,
+               0.f, 360.f, 36, ToRL(color));
+}
+
 void Renderer2D::DrawTextSimple(const std::string& text, Vec2 pos, int size, Color4 color) {
     ::DrawText(text.c_str(), (int)pos.x, (int)pos.y, size, ToRL(color));
 }

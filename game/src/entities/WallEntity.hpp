@@ -3,6 +3,7 @@
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Sprite.hpp"
 #include "ecs/components/Collider2D.hpp"
+#include "ecs/components/SolidObject.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 
@@ -25,8 +26,9 @@ inline Entity CreateWall(Registry& reg, ResourceManager* rm, Vec2 pos)
         .shape      = ColliderShape::Box,
         .size       = {64.f, 64.f},
         .isTrigger  = false,
-        .debugColor = {180, 120, 60, 120},
+        .debugColor = {255, 220, 0, 200},
     });
+    reg.Emplace<SolidObject>(e);
 
     return e;
 }

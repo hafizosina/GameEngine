@@ -9,8 +9,9 @@
 #include "ecs/components/Tags.hpp"
 #include "ecs/components/Target.hpp"
 #include "ecs/components/FiniteStateMachine.hpp"
-#include "ecs/components/AIBehaviors.hpp"
+#include "ai/AIBehaviors.hpp"
 #include "ecs/components/Sensor.hpp"
+#include "ecs/components/SolidObject.hpp"
 #include "entities/WallEntity.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
@@ -38,24 +39,49 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     auto& target  = reg.Emplace<Target>(e);
     target.radius = 5.0f;
 
-    // Sensor detects walls and nearby enemies — Separate reads from this.
+    // Sensor detects walls, other enemies, and the player.
     Sensor& sensor = reg.Emplace<Sensor>(e);
     sensor.shape   = ColliderShape::Circle;
-    sensor.size    = {80.f, 80.f};
+    sensor.size    = {200.f, 200.f};
     sensor.detect  = [](entt::entity target, entt::registry& r) {
-        return r.all_of<WallTag>(target) || r.all_of<EnemyTag>(target);
+        return r.all_of<WallTag>(target) ||
+               r.all_of<EnemyTag>(target) ||
+               r.all_of<IsPlayer>(target);
     };
 
+    reg.Emplace<WanderBehavior>(e);
+
     auto& fsm = reg.Emplace<FiniteStateMachine>(e);
+
+    // State 0: Wander — roam randomly until player enters sensor range.
     fsm.AddState({
-        0, "Chase",
-        [](entt::registry& r, Entity self, float)  { AIBehaviors::FindNearest<IsPlayer>(r, self); },
+        0, "Wander",
+        nullptr,
         [](entt::registry& r, Entity self, float dt) {
-            AIBehaviors::SeekTarget(r, self, dt, 120.f);
-            AIBehaviors::Separate(r, self, 80.f, 40.f);
+            AIBehaviors::Wander(r, self, dt, 60.f);
+            AIBehaviors::Separate(r, self, 200.f, 40.f);
         },
         nullptr
     });
+
+    // State 1: Chase — seek player, separate from walls/enemies.
+    fsm.AddState({
+        1, "Chase",
+        [](entt::registry& r, Entity self, float) { AIBehaviors::FindNearest<IsPlayer>(r, self); },
+        [](entt::registry& r, Entity self, float dt) {
+            AIBehaviors::SeekTarget(r, self, dt, 120.f);
+            AIBehaviors::Separate(r, self, 200.f, 40.f);
+        },
+        nullptr
+    });
+
+    // Wander → Chase when player enters sensor; Chase → Wander when player leaves.
+    fsm.AddTransition({0, 1, [](entt::registry& r, Entity self, float dt) {
+        return AIBehaviors::PlayerInSensor(r, self, dt);
+    }});
+    fsm.AddTransition({1, 0, [](entt::registry& r, Entity self, float dt) {
+        return !AIBehaviors::PlayerInSensor(r, self, dt);
+    }});
 
     Sprite& spr = reg.Emplace<Sprite>(e, rm->LoadTexture(Assets::TEX_ENEMY));
     spr.origin  = {32, 32};
@@ -64,6 +90,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         .shape = ColliderShape::Circle,
         .size  = {20, 20},
     });
+    reg.Emplace<SolidObject>(e);
 
     return e;
 }
