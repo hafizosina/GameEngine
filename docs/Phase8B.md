@@ -1,4 +1,4 @@
-# Phase 8B — Tilemap System
+renam# Phase 8B — Tilemap System
 
 ## Overview
 
@@ -21,12 +21,11 @@ Frame render order:
   UISystem::Render()
 ```
 
-Default layer assignments:
-- zOrder 0  = ground/floor
-- zOrder 5  = objects below entities (carpet, water)
-- zOrder 10 = entities (ECS)   ← implicit, not a tile layer
-- zOrder 15 = roof/canopy
-- zOrder 20 = UI               ← handled by UISystem
+Default layer assignments (Flexible Examples):
+- zOrder [0..49]   = Background Layers (Dirt, Sand, Grass, etc. - Below Entities)
+- zOrder [50]      = ECS ENTITIES (Player, Enemies, Items - Y-Sorted)
+- zOrder [51..99]  = Overhead Layers (Roof, Tree Canopies - Above Entities)
+- zOrder [100+]    = UI & Overlays (Always on top, handled by UISystem)
 
 ---
 
@@ -124,27 +123,27 @@ bool IsWalkable(int tileX, int tileY) const {
 
 ## Dual Grid Autotiler
 
-```
-DataGrid  — stores terrain TYPE per cell (Grass=1, Rock=2, Water=3…)
-VisualGrid — offset (0.5, 0.5) tiles — stores sprite index
+DataGrid  — stores terrain TYPE per cell (0=Dirt, 1=Sand, 2=Grass, 3=Stone…)
+VisualGrid — offset (0.5, 0.5) tiles — stores sprite index (0-15)
 
-For each visual cell (vx, vy):
-    sample 4 data cells:
-        TL = DataGrid[vx,   vy  ]
-        TR = DataGrid[vx+1, vy  ]
-        BL = DataGrid[vx,   vy+1]
-        BR = DataGrid[vx+1, vy+1]
-    
-    dominantType = most common of {TL,TR,BL,BR}
-    
-    bitmask = (TL==dominantType ? 1 : 0)
-            | (TR==dominantType ? 2 : 0)
-            | (BL==dominantType ? 4 : 0)
-            | (BR==dominantType ? 8 : 0)
-    
-    // bitmask 0-15 → pick sprite from 4x4 autotile sheet row for dominantType
-    VisualGrid[vx][vy] = autotileSheet[dominantType][bitmask]
+### Priority-Based Layering
+Instead of one complex pass, we render each terrain type as a separate overlay:
+1. **Pass 0 (Base)**: Draw Dirt (opaque) everywhere.
+2. **Pass N (Overlay)**: For each terrain type T (Sand, Grass, Stone) in priority order:
+   - Calculate bitmask for visual tile (vx, vy) based on 4 corners (TL, TR, BL, BR).
+   - Bit `i` is **1** if corner is terrain `T` OR HIGHER priority.
+   - Bit `i` is **0** if corner is lower priority.
+   - Draw tile from `T`'s sheet. The "0" parts are **Transparent**.
+
+### Bitmask Reference (4x4 Sheet)
+The 16-variant sheet is mapped using the following layout (indices in row-major 4x4):
 ```
+[ 4]  [10]  [13]  [12]
+[ 9]  [14]  [15]  [ 7]
+[ 2]  [ 3]  [11]  [ 5]
+[ 0]  [ 8]  [ 6]  [ 1]
+```
+*(Mask values: TL=1, TR=2, BL=4, BR=8)*
 
 ```cpp
 // Call after any terrain edit:
@@ -262,13 +261,14 @@ TiledImporter::Load("map.tmx") → TileMap
 
 ## Implementation Order (Phase 8B)
 
-1. `engine/tilemap/TileTypes.hpp` — TileID, TileInfo, TileRegistry, ivec2
-2. `engine/tilemap/TileChunk.hpp` — chunk data, dirty flag
-3. `engine/tilemap/TileLayer.hpp` — layer with chunk map, SetTile/GetTile
-4. `engine/tilemap/TileMap.hpp`   — scene-owned map, coordinate API, IsWalkable
-5. `engine/tilemap/DualGridAutotiler.hpp` — Bake()
-6. `engine/tilemap/TilemapRenderSystem.hpp` — SpriteBatch render per visible chunk
-7. Add z-order render passes to `Scene::Render()` contract
-8. Wire into GameplayScene as proof-of-concept
+1. `game/src/dev/TextureBaker.cpp` — **COMPLETED**: 16-variant procedural generator
+2. `engine/tilemap/TileTypes.hpp` — TileID, TileInfo, TileRegistry, ivec2
+3. `engine/tilemap/TileChunk.hpp` — chunk data, dirty flag
+4. `engine/tilemap/TileLayer.hpp` — layer with chunk map, SetTile/GetTile
+5. `engine/tilemap/TileMap.hpp`   — scene-owned map, coordinate API, IsWalkable
+6. `engine/tilemap/DualGridAutotiler.hpp` — Priority-based Bake()
+7. `engine/tilemap/TilemapRenderSystem.hpp` — SpriteBatch render per visible chunk
+8. Add z-order render passes to `Scene::Render()` contract
+9. Wire into GameplayScene as proof-of-concept
 
 Then create a new plan.md for implementation in the actual coding session.
