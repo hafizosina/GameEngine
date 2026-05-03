@@ -24,6 +24,8 @@ public:
         gameplay.language  = Serializer::GetString(j,"gameplay.language",  "en");
         gameplay.difficulty= Serializer::GetString(j,"gameplay.difficulty","normal");
         gameplay.showFPS   = Serializer::GetBool  (j,"gameplay.showFPS",   false);
+        // debug
+        debug.drawCollisions = Serializer::GetBool(j,"debug.drawCollisions", false);
 
         // keep raw json for Save()
         m_Json = j;
@@ -42,9 +44,10 @@ public:
         m_Json["audio"]["sfxVolume"]     = audio.sfxVolume;
         m_Json["audio"]["musicVolume"]   = audio.musicVolume;
         m_Json["audio"]["muted"]         = audio.muted;
-        m_Json["gameplay"]["language"]   = gameplay.language;
-        m_Json["gameplay"]["difficulty"] = gameplay.difficulty;
-        m_Json["gameplay"]["showFPS"]    = gameplay.showFPS;
+        m_Json["gameplay"]["language"]       = gameplay.language;
+        m_Json["gameplay"]["difficulty"]     = gameplay.difficulty;
+        m_Json["gameplay"]["showFPS"]        = gameplay.showFPS;
+        m_Json["debug"]["drawCollisions"]    = debug.drawCollisions;
 
         Serializer::SaveFile(path, m_Json);
         LOG_INFO("SettingsDB saved to " + path);
@@ -72,6 +75,10 @@ public:
         std::string difficulty = "normal";
         bool        showFPS    = false;
     } gameplay;
+
+    struct {
+        bool drawCollisions = false;
+    } debug;
 
 private:
     Json m_Json;

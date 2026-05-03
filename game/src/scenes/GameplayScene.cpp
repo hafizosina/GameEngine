@@ -5,6 +5,8 @@
 #include "input/InputManager.hpp"
 #include "assets/AssetIDs.hpp"
 #include "utils/Logger.hpp"
+#include "renderer/DebugDraw2D.hpp"
+#include "data/DataManager.hpp"
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Velocity2D.hpp"
 #include "ecs/components/Sprite.hpp"
@@ -30,22 +32,22 @@ void GameplayScene::OnEnter()
     m_Registry.Emplace<Velocity2D>(m_Player);
     m_Registry.Emplace<PlayerController>(m_Player);
     m_Registry.Emplace<IsTrigger>(m_Player);
-    m_Registry.Emplace<IsPlayer>(m_Player);  // Engine tag for AI
-    m_Registry.Emplace<PlayerTag>(m_Player); // Game tag
+    m_Registry.Emplace<IsPlayer>(m_Player);   // Engine tag for AI
+    m_Registry.Emplace<PlayerTag>(m_Player);  // Game tag
     m_Registry.Emplace<DealsDamage>(m_Player, DealsDamage{30});
 
     Health& playerHealth = m_Registry.Emplace<Health>(m_Player, Health{100, 100, {}});
     playerHealth.onDied = [](entt::entity e, Registry& reg) {
         LOG_INFO("Player died! Game over.");
-        reg.Get<Health>(e).current = 100; // reset for demo — replace with scene transition
+        reg.Get<Health>(e).current = 100;  // reset for demo — replace with scene transition
     };
 
     Sprite& playerSprite = m_Registry.Emplace<Sprite>(m_Player, rm->LoadTexture(Assets::TEX_PLAYER));
     playerSprite.origin = {32, 32};
 
     Collider2D& playerCol = m_Registry.Emplace<Collider2D>(m_Player);
-    playerCol.shape  = ColliderShape::Circle;
-    playerCol.size   = {24, 24};
+    playerCol.shape = ColliderShape::Circle;
+    playerCol.size = {24, 24};
     playerCol.offset = {0, 0};
 
     m_BulletPool.PreWarm(30);
@@ -63,18 +65,17 @@ void GameplayScene::Update(float dt)
 
     // 1. Player Movement
     auto& pTrans = m_Registry.Get<Transform2D>(m_Player);
-    auto& pCtrl  = m_Registry.Get<PlayerController>(m_Player);
-    auto& pVel   = m_Registry.Get<Velocity2D>(m_Player);
+    auto& pCtrl = m_Registry.Get<PlayerController>(m_Player);
+    auto& pVel = m_Registry.Get<Velocity2D>(m_Player);
 
     pVel.linear = {0, 0};
-    if (input->GetAction("move_up")->IsDown())    pVel.linear.y -= pCtrl.speed;
-    if (input->GetAction("move_down")->IsDown())  pVel.linear.y += pCtrl.speed;
-    if (input->GetAction("move_left")->IsDown())  pVel.linear.x -= pCtrl.speed;
+    if (input->GetAction("move_up")->IsDown()) pVel.linear.y -= pCtrl.speed;
+    if (input->GetAction("move_down")->IsDown()) pVel.linear.y += pCtrl.speed;
+    if (input->GetAction("move_left")->IsDown()) pVel.linear.x -= pCtrl.speed;
     if (input->GetAction("move_right")->IsDown()) pVel.linear.x += pCtrl.speed;
 
     // 2. Player Shooting
-    bool shooting = input->GetMouse().IsButtonPressed(MOUSE_BUTTON_LEFT) ||
-                    input->GetAction("jump")->IsPressed();
+    bool shooting = input->GetMouse().IsButtonPressed(MOUSE_BUTTON_LEFT) || input->GetAction("jump")->IsPressed();
 
     if (shooting) {
         Vec2 mousePos = input->GetMouse().GetPosition();
@@ -117,6 +118,12 @@ void GameplayScene::Render()
     auto* renderer = ServiceLocator::Get<Renderer2D>();
     m_RenderSystem.Render(m_Registry, *renderer);
 
+#ifdef ENGINE_DEBUG
+    auto* dm = ServiceLocator::Get<DataManager>();
+    if (dm->settings.debug.drawCollisions)
+        DebugDraw2D::DrawColliders(*renderer, m_Registry);
+#endif
+
     int hp = m_Registry.IsValid(m_Player) ? m_Registry.Get<Health>(m_Player).current : 0;
     DrawText(TextFormat("HEALTH: %d", hp), 20, 20, 20, WHITE);
 }
@@ -146,19 +153,20 @@ void GameplayScene::SpawnEnemy()
     target.radius = 5.0f;
 
     auto& fsm = m_Registry.Emplace<FiniteStateMachine>(enemy);
-    fsm.AddState({
-        0, "Chase",
-        [](entt::registry& reg, Entity self, float)  { AIBehaviors::FindNearest<IsPlayer>(reg, self); },
-        [](entt::registry& reg, Entity self, float dt){ AIBehaviors::SeekTarget(reg, self, dt, 120.f); },
-        nullptr
-    });
+    fsm.AddState({0, "Chase",
+                  [](entt::registry& reg, Entity self, float) { AIBehaviors::FindNearest<IsPlayer>(reg, self); },
+                  [](entt::registry& reg, Entity self, float dt) {
+                      AIBehaviors::SeekTarget(reg, self, dt, 120.f);
+                      AIBehaviors::Separate<IsEnemy>(reg, self, 60.f, 8.f);
+                  },
+                  nullptr});
 
     Sprite& enemySprite = m_Registry.Emplace<Sprite>(enemy, rm->LoadTexture(Assets::TEX_ENEMY));
     enemySprite.origin = {32, 32};
 
     Collider2D& enemyCol = m_Registry.Emplace<Collider2D>(enemy);
     enemyCol.shape = ColliderShape::Circle;
-    enemyCol.size  = {20, 20};
+    enemyCol.size = {20, 20};
 }
 
 void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
@@ -177,10 +185,8 @@ void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
 
     Health& bHealth = m_Registry.Emplace<Health>(bulletObj->entity, Health{1, 1, {}});
     bHealth.onDied = [this, bulletObj](entt::entity e, Registry& reg) {
-        m_ActiveBullets.erase(
-            std::remove(m_ActiveBullets.begin(), m_ActiveBullets.end(), bulletObj),
-            m_ActiveBullets.end()
-        );
+        m_ActiveBullets.erase(std::remove(m_ActiveBullets.begin(), m_ActiveBullets.end(), bulletObj),
+                              m_ActiveBullets.end());
         m_BulletPool.Release(bulletObj);
         reg.Destroy(e);
     };
@@ -190,9 +196,9 @@ void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
 
     Collider2D& bCol = m_Registry.Emplace<Collider2D>(bulletObj->entity);
     bCol.shape = ColliderShape::Circle;
-    bCol.size  = {8, 8};
+    bCol.size = {8, 8};
 
     m_ActiveBullets.push_back(bulletObj);
 }
 
-} // namespace Zhenzhu
+}  // namespace Zhenzhu

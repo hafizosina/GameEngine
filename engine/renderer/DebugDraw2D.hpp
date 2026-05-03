@@ -45,7 +45,8 @@ public:
         ::DrawFPS((int)pos.x, (int)pos.y);
     }
 
-    // Draw wire colliders for every entity with Transform2D + Collider2D
+    // Draw wire colliders for every entity with Transform2D + Collider2D.
+    // Each collider uses its own debugColor — override per entity for custom colours.
     static void DrawColliders(Renderer2D& r, Registry& reg) {
         auto view = reg.View<Transform2D, Collider2D>();
         for (auto [entity, transform, col] : view.each()) {
@@ -59,9 +60,9 @@ public:
                     origin.y - col.size.y * 0.5f,
                     col.size.x, col.size.y
                 };
-                r.DrawRectLines(rect, 1.f, {0, 255, 80, 200});
+                r.DrawRectLines(rect, 1.f, col.debugColor);
             } else {
-                r.DrawCircle(origin, col.size.x, {0, 220, 255, 120});
+                r.DrawCircle(origin, col.size.x, col.debugColor);
             }
         }
     }

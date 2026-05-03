@@ -62,6 +62,36 @@ public:
     }
 
     /**
+     * Action: Steers away from nearby entities sharing the same Tag.
+     * Accumulates a repulsion force weighted by inverse distance and adds it to velocity.
+     */
+    template<typename Tag>
+    static void Separate(entt::registry& reg, Entity self, float radius, float strength) {
+        if (!reg.all_of<Transform2D, Velocity2D>(self)) return;
+
+        auto& trans = reg.get<Transform2D>(self);
+        auto& vel   = reg.get<Velocity2D>(self);
+
+        Vec2 steer = {0, 0};
+        int  count = 0;
+
+        auto view = reg.view<Transform2D, Tag>();
+        for (auto [other, oTrans] : view.each()) {
+            if (other == self) continue;
+            float dist = Math2D::Distance(trans.position, oTrans.position);
+            if (dist > 0.f && dist < radius) {
+                // Weight by inverse distance — closer neighbours push harder
+                Vec2 away = (trans.position - oTrans.position).Normalize();
+                steer = steer + away * (radius - dist);
+                ++count;
+            }
+        }
+
+        if (count > 0)
+            vel.linear = vel.linear + steer.Normalize() * strength;
+    }
+
+    /**
      * Utility: Find the nearest entity with a specific tag and set it as target.
      */
     template<typename Tag>

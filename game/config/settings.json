@@ -17,5 +17,8 @@
         "language": "en",
         "difficulty": "normal",
         "showFPS": true
+    },
+    "debug": {
+        "drawCollisions": false
     }
 }
