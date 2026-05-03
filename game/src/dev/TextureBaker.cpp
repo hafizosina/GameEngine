@@ -1,3 +1,4 @@
+#include <cmath>
 #include "dev/TextureBaker.hpp"
 #include "utils/Logger.hpp"
 #include <raylib.h>
@@ -288,17 +289,54 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
     constexpr int W    = TILE * 4;   // 128
     constexpr int H    = TILE * 4;   // 128
 
-    const Color gBase  = {68,  155, 45, 255};  // Grass (Bit = 1)
-    const Color dBase  = {148, 112, 68, 255};  // Dirt  (Bit = 0)
-    const Color grid   = {255, 255, 255, 30};  // Subtle grid lines
+    const Color gBase  = {68,  155, 45, 255};  // Grass
+    const Color gLight = {92,  198, 65, 255};
+    const Color gDark  = {48,  118, 32, 255};
+    const Color dBase  = {148, 112, 68, 255};  // Dirt
+    const Color dLight = {172, 134, 88, 255};
+    const Color dDark  = {115,  85, 52, 255};
 
     Image img = GenImageColor(W, H, BLANK);
 
+    // Deterministic Hash for noise
+    auto Hash = [](int x, int y) -> float {
+        uint32_t h = (uint32_t)x * 374761393U + (uint32_t)y * 668265263U;
+        h = (h ^ (h >> 13)) * 1274126177U;
+        return (float)(h & 0x7FFFFFFF) / (float)0x7FFFFFFF;
+    };
+
+    // Smoothing Helpers
+    auto Lerp = [](float a, float b, float t) { return a + t * (b - a); };
+    auto SmoothStep = [](float t) { return t * t * (3.0f - 2.0f * t); };
+
+    auto Hash2D = [](int x, int y) -> float {
+        uint32_t h = (uint32_t)x * 374761393U + (uint32_t)y * 668265263U;
+        h = (h ^ (h >> 13)) * 1274126177U;
+        return (float)(h & 0x7FFFFFFF) / (float)0x7FFFFFFF;
+    };
+
+    auto ValueNoise = [&](float x, float y) -> float {
+        int ix = (int)std::floor(x);
+        int iy = (int)std::floor(y);
+        float fx = x - ix;
+        float fy = y - iy;
+
+        float a = Hash2D(ix, iy);
+        float b = Hash2D(ix + 1, iy);
+        float c = Hash2D(ix, iy + 1);
+        float d = Hash2D(ix + 1, iy + 1);
+
+        float ux = SmoothStep(fx);
+        float uy = SmoothStep(fy);
+
+        return Lerp(Lerp(a, b, ux), Lerp(c, d, ux), uy);
+    };
+
     const int layout[16] = {
-        4,  10, 13, 12,  // Row 0: BL, TR+BR, TL+BL+BR, BL+BR
-        9,  14, 15, 7,   // Row 1: TL+BR, TR+BL+BR, ALL, TL+TR+BL
-        2,  3,  11, 5,   // Row 2: TR, TL+TR, TL+TR+BR, TL+BL
-        0,  8,  6,  1    // Row 3: None, BR, TR+BL, TL
+        4,  10, 13, 12, 
+        9,  14, 15, 7,  
+        2,  3,  11, 5,  
+        0,  8,  6,  1   
     };
 
     for (int i = 0; i < 16; i++) {
@@ -306,32 +344,66 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
         int ox = (i % 4) * TILE;
         int oy = (i / 4) * TILE;
 
-        // TL=bit0 TR=bit1 BL=bit2 BR=bit3
         bool corners[4] = {
-            (mask & 1) != 0,   // TL
-            (mask & 2) != 0,   // TR
-            (mask & 4) != 0,   // BL
-            (mask & 8) != 0,   // BR
+            (mask & 1) != 0, (mask & 2) != 0, 
+            (mask & 4) != 0, (mask & 8) != 0
         };
 
-        const int qx[4] = {0,    HALF, 0,    HALF};
-        const int qy[4] = {0,    0,    HALF, HALF};
+        // ── Render Tile Pixels ───────────────────────────────────────
+        for (int ly = 0; ly < TILE; ly++) {
+            for (int lx = 0; lx < TILE; lx++) {
+                int px = ox + lx;
+                int py = oy + ly;
 
-        // ── Fill each quadrant ───────────────────────────────────────
-        for (int q = 0; q < 4; q++) {
-            Color c = corners[q] ? gBase : dBase;
-            ImageDrawRectangle(&img, ox + qx[q], oy + qy[q], HALF, HALF, c);
-            
-            // Reference markers
-            if (corners[q]) {
-                ImageDrawRectangle(&img, ox + qx[q] + HALF/2 - 2, oy + qy[q] + HALF/2 - 2, 4, 4, {255,255,255,100});
+                // Base smooth noise
+                float n = ValueNoise((float)px * 0.15f, (float)py * 0.15f);
+                // Extra crunch for the edges
+                float edgeCrunch = Hash2D(px, py);
+
+                // Determine base quadrant
+                int q = (lx < HALF ? 0 : 1) + (ly < HALF ? 0 : 2);
+                bool isGrass = corners[q];
+
+                // ── Jagged Boundary Transition ───────────────────────
+                float distToEdgeX = std::abs((float)lx - HALF + 0.5f);
+                float distToEdgeY = std::abs((float)ly - HALF + 0.5f);
+
+                auto JaggedEdge = [&](float dist, int otherQ) {
+                    if (dist < 3.5f) {
+                        if (corners[otherQ] != isGrass) {
+                            // Hard threshold flip for "crunchy" jagged look
+                            if (edgeCrunch > (dist / 4.0f) + 0.2f) isGrass = corners[otherQ];
+                        }
+                    }
+                };
+                
+                JaggedEdge(distToEdgeX, (lx < HALF) ? q + 1 : q - 1);
+                JaggedEdge(distToEdgeY, (ly < HALF) ? q + 2 : q - 2);
+
+                // ── Color Selection (Post-Transition) ─────────────────
+                Color c = isGrass ? gBase : dBase;
+                
+                // Subtle organic shading (Surface only)
+                if (n < 0.25f) {
+                    float t = (0.25f - n) / 0.25f;
+                    c.r = (unsigned char)Lerp(c.r, isGrass ? gDark.r : dDark.r, t);
+                    c.g = (unsigned char)Lerp(c.g, isGrass ? gDark.g : dDark.g, t);
+                    c.b = (unsigned char)Lerp(c.b, isGrass ? gDark.b : dDark.b, t);
+                } else if (n > 0.75f) {
+                    float t = (n - 0.75f) / 0.25f;
+                    c.r = (unsigned char)Lerp(c.r, isGrass ? gLight.r : dLight.r, t);
+                    c.g = (unsigned char)Lerp(c.g, isGrass ? gLight.g : dLight.g, t);
+                    c.b = (unsigned char)Lerp(c.b, isGrass ? gLight.b : dLight.b, t);
+                }
+
+                // Add very subtle tufts
+                if (isGrass && edgeCrunch > 0.98f) {
+                    ImageDrawPixel(&img, px, py, gLight);
+                }
+
+                ImageDrawPixel(&img, px, py, c);
             }
         }
-
-        // Draw tile border and quadrant divider
-        ImageDrawRectangleLines(&img, { (float)ox, (float)oy, (float)TILE, (float)TILE }, 1, grid);
-        ImageDrawRectangle(&img, ox + HALF, oy, 1, TILE, grid);
-        ImageDrawRectangle(&img, ox, oy + HALF, TILE, 1, grid);
     }
 
     bool ok = ExportImage(img, outputPath.c_str());
