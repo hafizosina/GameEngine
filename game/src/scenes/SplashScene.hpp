@@ -9,6 +9,7 @@ public:
     void OnExit()   override;
     void Update(float dt) override;
     void Render() override;
+    // No ECS registry — this scene only runs bakers and then switches away.
     Registry* GetRegistry() override { return nullptr; }
 
 private:

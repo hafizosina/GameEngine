@@ -2,14 +2,14 @@
     "player": {
         "speed": 250.0,
         "jumpForce": 400.0,
-        "health": 100
+        "health": 100,
+        "damage": 30
     },
     "enemies": {
         "slime": {
-            "speed": 80.0,
+            "speed": 100.0,
             "health": 30,
-            "damage": 10,
-            "dropChance": 0.3,
+            "damage": 3,
             "detectionRadius": 200.0
         },
         "boss": {
@@ -20,10 +20,20 @@
             "detectionRadius": 350.0
         }
     },
+    "bullet": {
+        "speed": 500.0,
+        "lifetime": 1.5,
+        "damage": 10
+    },
     "world": {
         "gravity": 980.0,
         "tileSize": 32,
         "cameraLerpSpeed": 5.0
+    },
+    "gameplay": {
+        "maxEnemies": 50,
+        "enemySpawnInterval": 1.0,
+        "bulletPoolSize": 30
     },
     "game": {
         "winScore": 10

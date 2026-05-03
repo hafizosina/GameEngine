@@ -6,8 +6,8 @@
 #include "assets/AssetTracker.hpp"
 #include "dev/TextureBaker.hpp"
 #include "dev/SoundComposer.hpp"
+#include "renderer/Renderer2D.hpp"
 #include "utils/Logger.hpp"
-#include <raylib.h>
 
 namespace Zhenzhu {
 
@@ -44,10 +44,11 @@ void SplashScene::Update(float dt) {
 }
 
 void SplashScene::Render() {
-    int sw = GetScreenWidth();
-    int sh = GetScreenHeight();
-    DrawText("Zhenzhu Engine", sw / 2 - 80, sh / 2 - 20, 24, RAYWHITE);
-    DrawText("Loading...",     sw / 2 - 50, sh / 2 + 10, 16, GRAY);
+    auto* r  = ServiceLocator::Get<Renderer2D>();
+    float cx = r->GetGameWidth()  * 0.5f;
+    float cy = r->GetGameHeight() * 0.5f;
+    r->DrawTextSimple("Zhenzhu Engine", {cx - 80.f, cy - 20.f}, 24, {240, 240, 240, 255});
+    r->DrawTextSimple("Loading...",     {cx - 50.f, cy + 10.f}, 16, {160, 160, 160, 255});
 }
 
 } // namespace Zhenzhu

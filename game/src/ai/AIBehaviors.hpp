@@ -1,12 +1,10 @@
 #pragma once
-#include <limits>
 #include <cmath>
 #include <random>
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Velocity2D.hpp"
 #include "ecs/components/Target.hpp"
 #include "ecs/components/Sensor.hpp"
-#include "ecs/components/Tags.hpp"
 #include "utils/Math2D.hpp"
 
 namespace Zhenzhu {
@@ -65,14 +63,15 @@ public:
         vel.linear = wb.direction * speed;
     }
 
-    // ── PlayerInSensor ────────────────────────────────────────────────
-    // FSM condition: true when any entity with IsPlayer is inside the Sensor.
-    static bool PlayerInSensor(entt::registry& reg, Entity self, float /*dt*/) {
+    // ── TagInSensor ───────────────────────────────────────────────────
+    // FSM condition: true when any sensor hit carries the given tag.
+    template<typename Tag>
+    static bool TagInSensor(entt::registry& reg, Entity self, float /*dt*/) {
         if (!reg.all_of<Sensor>(self)) return false;
         auto& sensor = reg.get<Sensor>(self);
         for (int i = 0; i < sensor.hitCount; ++i) {
             entt::entity h = sensor.hits[i];
-            if (reg.valid(h) && reg.all_of<IsPlayer>(h)) return true;
+            if (reg.valid(h) && reg.all_of<Tag>(h)) return true;
         }
         return false;
     }
@@ -118,30 +117,25 @@ public:
             vel.linear = vel.linear + steer.Normalize() * strength;
     }
 
-    // ── FindNearest ───────────────────────────────────────────────────
-    // Sets the entity's Target to the nearest entity with the given tag.
-    // Global scan — call from FSM onEnter (once per state transition),
-    // not from onUpdate (every frame).
+    // ── FindInSensor ─────────────────────────────────────────────────
+    // Sets the entity's Target to the first sensor hit that has the given tag.
+    // Use in FSM onEnter after a sensor-based transition — the player is
+    // already in hits[] so no global scan is needed.
     template<typename Tag>
-    static void FindNearest(entt::registry& reg, Entity self) {
-        if (!reg.all_of<Transform2D, Target>(self)) return;
+    static void FindInSensor(entt::registry& reg, Entity self) {
+        if (!reg.all_of<Transform2D, Target, Sensor>(self)) return;
 
-        auto& trans  = reg.get<Transform2D>(self);
         auto& target = reg.get<Target>(self);
+        auto& sensor = reg.get<Sensor>(self);
 
-        float  best    = std::numeric_limits<float>::max();
-        Entity nearest = NullEntity;
-
-        for (auto [other, oTrans] : reg.view<Transform2D, Tag>().each()) {
-            if (other == self) continue;
-            float d = Math2D::Distance(trans.position, oTrans.position);
-            if (d < best) { best = d; nearest = other; }
-        }
-
-        if (nearest != NullEntity) {
-            target.entity    = nearest;
-            target.position  = reg.get<Transform2D>(nearest).position;
-            target.hasTarget = true;
+        for (int i = 0; i < sensor.hitCount; ++i) {
+            entt::entity h = sensor.hits[i];
+            if (reg.valid(h) && reg.all_of<Tag>(h)) {
+                target.entity    = h;
+                target.position  = reg.get<Transform2D>(h).position;
+                target.hasTarget = true;
+                return;
+            }
         }
     }
 };

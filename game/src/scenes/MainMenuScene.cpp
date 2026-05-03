@@ -99,9 +99,6 @@ void MainMenuScene::Render()
     auto* renderer = ServiceLocator::Get<Renderer2D>();
     auto* input = ServiceLocator::Get<InputManager>();
 
-    // Background color
-    ClearBackground({20, 20, 25, 255});
-
     auto ctx = ui->MakeContext(renderer, input);
     m_Canvas.Render(ctx);
 }

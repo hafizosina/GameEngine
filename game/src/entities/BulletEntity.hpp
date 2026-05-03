@@ -9,6 +9,8 @@
 #include "ecs/components/Tags.hpp"
 #include "ecs/components/SolidObject.hpp"
 #include "resources/ResourceManager.hpp"
+#include "data/DataManager.hpp"
+#include "core/ServiceLocator.hpp"
 #include "assets/AssetIDs.hpp"
 #include "pool/ObjectPool.hpp"
 #include "pool/Poolable.hpp"
@@ -16,8 +18,6 @@
 #include <algorithm>
 
 namespace Zhenzhu {
-
-struct BulletTag {};
 
 struct BulletData {
     float lifetime = 1.5f;
@@ -36,15 +36,20 @@ inline Bullet* CreateBullet(Registry& reg, ResourceManager* rm,
                              std::vector<Bullet*>& activeBullets,
                              Vec2 pos, Vec2 dir)
 {
+    auto* dm      = ServiceLocator::Get<DataManager>();
+    float speed   = dm->gameConfig.GetFloat("bullet.speed",    500.f);
+    float lifetime = dm->gameConfig.GetFloat("bullet.lifetime",  1.5f);
+    int   damage  = dm->gameConfig.GetInt  ("bullet.damage",     10);
+
     Bullet* obj  = pool.Acquire();
     obj->entity  = reg.CreateEntity();
 
     reg.Emplace<Transform2D>(obj->entity, pos);
-    reg.Emplace<Velocity2D>(obj->entity, dir * 500.f);
-    reg.Emplace<BulletData>(obj->entity);
-    reg.Emplace<BulletTag>(obj->entity);
+    reg.Emplace<Velocity2D>(obj->entity, dir * speed);
+    reg.Emplace<BulletData>(obj->entity, BulletData{lifetime, 0.f});
+    reg.Emplace<IsBullet>(obj->entity);
     reg.Emplace<IsTrigger>(obj->entity);
-    reg.Emplace<DealsDamage>(obj->entity, DealsDamage{10});
+    reg.Emplace<DealsDamage>(obj->entity, DealsDamage{damage});
 
     Health& hp = reg.Emplace<Health>(obj->entity, Health{1, 1, {}});
     hp.onDied  = [&pool, &activeBullets, obj](entt::entity e, Registry& r) {

@@ -11,6 +11,7 @@ public:
     void OnExit()   override;
     void Update(float dt) override;
     void Render() override;
+    // No ECS registry — this scene is UI-only, no game entities.
     Registry* GetRegistry() override { return nullptr; }
 
 private:

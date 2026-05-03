@@ -4,12 +4,11 @@
 #include "ecs/components/Sprite.hpp"
 #include "ecs/components/Collider2D.hpp"
 #include "ecs/components/SolidObject.hpp"
+#include "ecs/components/Tags.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 
 namespace Zhenzhu {
-
-struct WallTag {};
 
 // Creates a single 64×64 wooden wall tile.
 // For longer walls, place multiple tiles adjacent to each other.
@@ -17,7 +16,7 @@ inline Entity CreateWall(Registry& reg, ResourceManager* rm, Vec2 pos)
 {
     Entity e = reg.CreateEntity();
     reg.Emplace<Transform2D>(e, pos);
-    reg.Emplace<WallTag>(e);
+    reg.Emplace<IsWall>(e);
 
     Sprite& spr = reg.Emplace<Sprite>(e, rm->LoadTexture(Assets::TEX_WALL));
     spr.origin  = {32.f, 32.f};

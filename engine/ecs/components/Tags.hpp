@@ -3,6 +3,7 @@ namespace Zhenzhu {
 
 struct IsPlayer   {};
 struct IsEnemy    {};
+struct IsWall     {};
 struct IsDead     {};
 struct IsGrounded {};
 struct IsTrigger  {};

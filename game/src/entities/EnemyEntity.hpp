@@ -12,13 +12,12 @@
 #include "ai/AIBehaviors.hpp"
 #include "ecs/components/Sensor.hpp"
 #include "ecs/components/SolidObject.hpp"
-#include "entities/WallEntity.hpp"
 #include "resources/ResourceManager.hpp"
+#include "data/DataManager.hpp"
+#include "core/ServiceLocator.hpp"
 #include "assets/AssetIDs.hpp"
 
 namespace Zhenzhu {
-
-struct EnemyTag {};
 
 struct EnemyAI {
     float speed = 100.f;
@@ -26,15 +25,20 @@ struct EnemyAI {
 
 inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
 {
+    auto* dm = ServiceLocator::Get<DataManager>();
+    float speed          = dm->gameConfig.GetFloat("enemies.slime.speed",          100.f);
+    int   health         = dm->gameConfig.GetInt  ("enemies.slime.health",          30);
+    int   damage         = dm->gameConfig.GetInt  ("enemies.slime.damage",           3);
+    float detectionRange = dm->gameConfig.GetFloat("enemies.slime.detectionRadius", 200.f);
+
     Entity e = reg.CreateEntity();
     reg.Emplace<Transform2D>(e, pos);
     reg.Emplace<Velocity2D>(e);
-    reg.Emplace<EnemyAI>(e);
-    reg.Emplace<EnemyTag>(e);
+    reg.Emplace<EnemyAI>(e, EnemyAI{speed});
     reg.Emplace<IsEnemy>(e);
     reg.Emplace<IsTrigger>(e);
-    reg.Emplace<Health>(e, Health{30, 30, {}});
-    reg.Emplace<DealsDamage>(e, DealsDamage{3});
+    reg.Emplace<Health>(e, Health{health, health, {}});
+    reg.Emplace<DealsDamage>(e, DealsDamage{damage});
 
     auto& target  = reg.Emplace<Target>(e);
     target.radius = 5.0f;
@@ -42,7 +46,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     // Sensor sees all SolidObjects in range — AI filters hits by tag.
     Sensor& sensor = reg.Emplace<Sensor>(e);
     sensor.shape   = ColliderShape::Circle;
-    sensor.size    = {200.f, 200.f};
+    sensor.size    = {detectionRange, detectionRange};
 
     reg.Emplace<WanderBehavior>(e);
 
@@ -53,29 +57,31 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         0, "Wander",
         nullptr,
         [](entt::registry& r, Entity self, float dt) {
-            AIBehaviors::Wander(r, self, dt, 60.f);
-            AIBehaviors::Separate(r, self, 200.f, 40.f);
+            float spd = r.get<EnemyAI>(self).speed;
+            AIBehaviors::Wander(r, self, dt, spd * 0.5f);
+            AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
         },
         nullptr
     });
 
-    // State 1: Chase — seek player, separate from walls/enemies.
+    // State 1: Chase — seek player at full speed, separate from obstacles.
     fsm.AddState({
         1, "Chase",
-        [](entt::registry& r, Entity self, float) { AIBehaviors::FindNearest<IsPlayer>(r, self); },
+        [](entt::registry& r, Entity self, float) { AIBehaviors::FindInSensor<IsPlayer>(r, self); },
         [](entt::registry& r, Entity self, float dt) {
-            AIBehaviors::SeekTarget(r, self, dt, 120.f);
-            AIBehaviors::Separate(r, self, 200.f, 40.f);
+            float spd = r.get<EnemyAI>(self).speed;
+            AIBehaviors::SeekTarget(r, self, dt, spd);
+            AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
         },
         nullptr
     });
 
     // Wander → Chase when player enters sensor; Chase → Wander when player leaves.
     fsm.AddTransition({0, 1, [](entt::registry& r, Entity self, float dt) {
-        return AIBehaviors::PlayerInSensor(r, self, dt);
+        return AIBehaviors::TagInSensor<IsPlayer>(r, self, dt);
     }});
     fsm.AddTransition({1, 0, [](entt::registry& r, Entity self, float dt) {
-        return !AIBehaviors::PlayerInSensor(r, self, dt);
+        return !AIBehaviors::TagInSensor<IsPlayer>(r, self, dt);
     }});
 
     Sprite& spr = reg.Emplace<Sprite>(e, rm->LoadTexture(Assets::TEX_ENEMY));

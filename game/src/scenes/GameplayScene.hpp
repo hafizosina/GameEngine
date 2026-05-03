@@ -38,10 +38,10 @@ private:
     ObjectPool<Bullet>   m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;
 
-    float        m_EnemySpawnTimer = 0.f;
-    entt::entity m_Player          = entt::null;
-
-    const int MAX_ENEMIES = 50;
+    float        m_EnemySpawnTimer    = 0.f;
+    float        m_EnemySpawnInterval = 1.f;
+    int          m_MaxEnemies         = 50;
+    entt::entity m_Player             = entt::null;
 };
 
 } // namespace Zhenzhu

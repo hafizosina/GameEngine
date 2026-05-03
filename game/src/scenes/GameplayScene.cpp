@@ -17,9 +17,14 @@ void GameplayScene::OnEnter()
 {
     LOG_INFO("Entering GameplayScene");
     auto* rm = ServiceLocator::Get<ResourceManager>();
+    auto* dm = ServiceLocator::Get<DataManager>();
+
+    m_MaxEnemies         = dm->gameConfig.GetInt  ("gameplay.maxEnemies",        50);
+    m_EnemySpawnInterval = dm->gameConfig.GetFloat("gameplay.enemySpawnInterval", 1.f);
+    int poolSize         = dm->gameConfig.GetInt  ("gameplay.bulletPoolSize",     30);
 
     m_Player = CreatePlayer(m_Registry, rm);
-    m_BulletPool.PreWarm(30);
+    m_BulletPool.PreWarm(poolSize);
     SpawnWalls();
 }
 
@@ -57,7 +62,7 @@ void GameplayScene::Update(float dt)
 
     // 3. Enemy Spawning
     m_EnemySpawnTimer += dt;
-    if (m_EnemySpawnTimer > 1.0f && (int)m_Registry.View<EnemyAI>().size() < MAX_ENEMIES) {
+    if (m_EnemySpawnTimer > m_EnemySpawnInterval && (int)m_Registry.View<EnemyAI>().size() < m_MaxEnemies) {
         SpawnEnemy();
         m_EnemySpawnTimer = 0.f;
     }
@@ -98,7 +103,7 @@ void GameplayScene::Render()
 #endif
 
     int hp = m_Registry.IsValid(m_Player) ? m_Registry.Get<Health>(m_Player).current : 0;
-    DrawText(TextFormat("HEALTH: %d", hp), 20, 20, 20, WHITE);
+    renderer->DrawTextSimple("HEALTH: " + std::to_string(hp), {20.f, 20.f}, 20, {255, 255, 255, 255});
 }
 
 void GameplayScene::SpawnWalls()
