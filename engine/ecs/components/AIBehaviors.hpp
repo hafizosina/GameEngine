@@ -1,87 +1,77 @@
 #pragma once
-#include "ecs/components/FiniteStateMachine.hpp"
+#include <algorithm>
+#include <limits>
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Velocity2D.hpp"
 #include "ecs/components/Target.hpp"
-#include "ecs/components/Tags.hpp"
+#include "ecs/components/Sensor.hpp"
 #include "utils/Math2D.hpp"
 
 namespace Zhenzhu {
 
-/**
- * Reusable AI Actions and Conditions for the FiniteStateMachine.
- */
 class AIBehaviors {
 public:
-    /**
-     * Action: Seeks a target defined in the entity's Target component.
-     * If no target component exists, does nothing.
-     */
+    // ── Seek ─────────────────────────────────────────────────────────
+    // Move toward the entity's Target component at speed px/s.
     static void SeekTarget(entt::registry& reg, Entity self, float /*dt*/, float speed) {
         if (!reg.all_of<Transform2D, Velocity2D, Target>(self)) return;
 
-        auto& trans = reg.get<Transform2D>(self);
-        auto& vel = reg.get<Velocity2D>(self);
+        auto& trans  = reg.get<Transform2D>(self);
+        auto& vel    = reg.get<Velocity2D>(self);
         auto& target = reg.get<Target>(self);
 
-        // If targeting an entity, update target position
         if (target.entity != NullEntity && reg.valid(target.entity)) {
             if (reg.all_of<Transform2D>(target.entity)) {
-                target.position = reg.get<Transform2D>(target.entity).position;
+                target.position  = reg.get<Transform2D>(target.entity).position;
                 target.hasTarget = true;
             }
         }
 
-        if (!target.hasTarget) {
-            vel.linear = {0, 0};
-            return;
-        }
+        if (!target.hasTarget) { vel.linear = {0, 0}; return; }
 
-        Vec2 toTarget = target.position - trans.position;
-        float dist = toTarget.Length();
-
-        if (dist > target.radius) {
-            vel.linear = toTarget.Normalize() * speed;
-        } else {
-            vel.linear = {0, 0};
-        }
+        Vec2  toTarget = target.position - trans.position;
+        float dist     = toTarget.Length();
+        vel.linear = (dist > target.radius) ? toTarget.Normalize() * speed : Vec2{0, 0};
     }
 
-    /**
-     * Condition: Returns true if the entity is within target range.
-     */
+    // ── WithinTargetRange ─────────────────────────────────────────────
+    // FSM condition: true when entity is within Target.radius of its target.
     static bool WithinTargetRange(entt::registry& reg, Entity self, float /*dt*/) {
         if (!reg.all_of<Transform2D, Target>(self)) return false;
-        
-        auto& trans = reg.get<Transform2D>(self);
+        auto& trans  = reg.get<Transform2D>(self);
         auto& target = reg.get<Target>(self);
-        
         if (!target.hasTarget) return false;
-        
         return Math2D::Distance(trans.position, target.position) <= target.radius;
     }
 
-    /**
-     * Action: Steers away from nearby entities sharing the same Tag.
-     * Accumulates a repulsion force weighted by inverse distance and adds it to velocity.
-     */
-    template<typename Tag>
+    // ── Separate ──────────────────────────────────────────────────────
+    // Steers away from everything currently in the entity's Sensor hits.
+    // The Sensor's detect predicate decides what counts as a neighbour
+    // (walls, other enemies, or both — set at entity creation time).
+    //
+    // radius   — only hits closer than this contribute steering force.
+    //            Typically match or slightly exceed the sensor's own radius.
+    // strength — how much the repulsion nudges velocity. Keep below seek
+    //            speed for a gentle bias; equal or greater for hard avoidance.
     static void Separate(entt::registry& reg, Entity self, float radius, float strength) {
-        if (!reg.all_of<Transform2D, Velocity2D>(self)) return;
+        if (!reg.all_of<Transform2D, Velocity2D, Sensor>(self)) return;
 
-        auto& trans = reg.get<Transform2D>(self);
-        auto& vel   = reg.get<Velocity2D>(self);
+        auto& trans  = reg.get<Transform2D>(self);
+        auto& vel    = reg.get<Velocity2D>(self);
+        auto& sensor = reg.get<Sensor>(self);
 
-        Vec2 steer = {0, 0};
+        Vec2 steer = {0.f, 0.f};
         int  count = 0;
 
-        auto view = reg.view<Transform2D, Tag>();
-        for (auto [other, oTrans] : view.each()) {
-            if (other == self) continue;
-            float dist = Math2D::Distance(trans.position, oTrans.position);
+        for (int i = 0; i < sensor.hitCount; ++i) {
+            entt::entity other = sensor.hits[i];
+            if (!reg.valid(other)) continue;
+            if (!reg.all_of<Transform2D>(other)) continue;
+
+            float dist = Math2D::Distance(trans.position,
+                                          reg.get<Transform2D>(other).position);
             if (dist > 0.f && dist < radius) {
-                // Weight by inverse distance — closer neighbours push harder
-                Vec2 away = (trans.position - oTrans.position).Normalize();
+                Vec2 away = (trans.position - reg.get<Transform2D>(other).position).Normalize();
                 steer = steer + away * (radius - dist);
                 ++count;
             }
@@ -91,31 +81,28 @@ public:
             vel.linear = vel.linear + steer.Normalize() * strength;
     }
 
-    /**
-     * Utility: Find the nearest entity with a specific tag and set it as target.
-     */
+    // ── FindNearest ───────────────────────────────────────────────────
+    // Sets the entity's Target to the nearest entity with the given tag.
+    // This still does a global scan — targeting decisions happen once per
+    // state enter, not every frame, so the cost is acceptable.
     template<typename Tag>
     static void FindNearest(entt::registry& reg, Entity self) {
         if (!reg.all_of<Transform2D, Target>(self)) return;
 
-        auto& trans = reg.get<Transform2D>(self);
+        auto& trans  = reg.get<Transform2D>(self);
         auto& target = reg.get<Target>(self);
 
-        float minPath = std::numeric_limits<float>::max();
+        float  best    = std::numeric_limits<float>::max();
         Entity nearest = NullEntity;
 
-        auto view = reg.view<Transform2D, Tag>();
-        for (auto [other, oTrans] : view.each()) {
+        for (auto [other, oTrans] : reg.view<Transform2D, Tag>().each()) {
             if (other == self) continue;
-            float dist = Math2D::Distance(trans.position, oTrans.position);
-            if (dist < minPath) {
-                minPath = dist;
-                nearest = other;
-            }
+            float d = Math2D::Distance(trans.position, oTrans.position);
+            if (d < best) { best = d; nearest = other; }
         }
 
         if (nearest != NullEntity) {
-            target.entity = nearest;
+            target.entity   = nearest;
             target.position = reg.get<Transform2D>(nearest).position;
             target.hasTarget = true;
         }

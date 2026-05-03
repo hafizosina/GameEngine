@@ -59,6 +59,12 @@
       "type":        "TEXTURE",
       "real":        "assets/textures/game/bullet.png",
       "placeholder": "assets/placeholder/bullet.png"
+    },
+    {
+      "id":          "tex.wall",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/game/wall.png",
+      "placeholder": "assets/placeholder/wall.png"
     }
   ]
 }

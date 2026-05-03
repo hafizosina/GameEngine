@@ -16,6 +16,7 @@ bool TextureBaker::Bake(const std::string& assetId, const std::string& outputPat
     if (assetId == "tex.player") return BakePlayer(assetId, outputPath);
     if (assetId == "tex.enemy")  return BakeEnemy(assetId, outputPath);
     if (assetId == "tex.bullet") return BakeBullet(assetId, outputPath);
+    if (assetId == "tex.wall")   return BakeWoodenWall(assetId, outputPath);
 
     return BakePlaceholder(assetId, outputPath);
 }
@@ -192,6 +193,83 @@ bool TextureBaker::BakeBullet(const std::string& assetId, const std::string& out
 
     bool ok = ExportImage(img, outputPath.c_str());
     UnloadImage(img);
+    return ok;
+}
+
+bool TextureBaker::BakeWoodenWall(const std::string& assetId, const std::string& outputPath)
+{
+    LOG_INFO("Baking wooden wall for: " + assetId);
+    std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
+
+    const int W = 64, H = 64;
+
+    // Plank colours
+    Color base      = {110, 70, 35, 255};   // mid brown
+    Color light     = {135, 90, 50, 255};   // lighter grain
+    Color dark      = {75,  45, 18, 255};   // dark grain
+    Color gap       = {45,  25,  8, 255};   // plank divider
+    Color border    = {35,  18,  5, 255};   // outer frame
+    Color knotOuter = {60,  35, 12, 255};
+    Color knotInner = {40,  20,  5, 255};
+
+    Image img = GenImageColor(W, H, base);
+
+    // ── Two horizontal planks separated by a dark gap ──────────────
+    // Plank A: rows 2..29   Plank B: rows 34..61
+    // Gap: rows 30..33
+    int plankDefs[2][2] = {{2, 29}, {34, 61}};
+
+    for (int p = 0; p < 2; ++p) {
+        int y0 = plankDefs[p][0];
+        int y1 = plankDefs[p][1];
+
+        // Horizontal grain lines within this plank
+        for (int i = 0; i < 6; ++i) {
+            // Deterministic spread across plank height
+            int gy = y0 + 2 + (i * (y1 - y0)) / 7;
+            Color gc = (i % 2 == 0) ? light : dark;
+            ImageDrawRectangle(&img, 2, gy, W - 4, 1, gc);
+        }
+
+        // Subtle vertical colour variation (simulates wood cross-grain)
+        for (int x = 4; x < W - 4; x += 8) {
+            Color vc = (x % 16 == 4) ? dark : light;
+            ImageDrawRectangle(&img, x, y0, 1, y1 - y0, {vc.r, vc.g, vc.b, 40});
+        }
+
+        // Knot — one per plank, offset to avoid repetition
+        int kx = (p == 0) ? 18 : 44;
+        int ky = y0 + (y1 - y0) / 2;
+        ImageDrawCircle(&img, kx, ky, 5, knotOuter);
+        ImageDrawCircle(&img, kx, ky, 2, knotInner);
+        // Grain curves around knot
+        ImageDrawRectangle(&img, kx - 8, ky - 1, 5, 1, dark);
+        ImageDrawRectangle(&img, kx + 4, ky - 1, 5, 1, dark);
+    }
+
+    // Nail-head hints at plank corners
+    auto nail = [&](int x, int y) {
+        ImageDrawRectangle(&img, x, y, 3, 3, border);
+        ImageDrawRectangle(&img, x + 1, y + 1, 1, 1, {180, 150, 120, 200});
+    };
+    nail(4,  4);  nail(W - 7, 4);
+    nail(4,  H - 7); nail(W - 7, H - 7);
+    nail(4,  31); nail(W - 7, 31);   // mid-row nails
+
+    // Plank gap
+    ImageDrawRectangle(&img, 2, 30, W - 4, 4, gap);
+
+    // Outer border
+    ImageDrawRectangle(&img, 0, 0,     W, 2,     border); // top
+    ImageDrawRectangle(&img, 0, H - 2, W, 2,     border); // bottom
+    ImageDrawRectangle(&img, 0, 0,     2, H,     border); // left
+    ImageDrawRectangle(&img, W - 2, 0, 2, H,     border); // right
+
+    bool ok = ExportImage(img, outputPath.c_str());
+    UnloadImage(img);
+
+    if (ok)  LOG_INFO("Baked: " + outputPath);
+    else     LOG_ERROR("Failed to bake: " + outputPath);
     return ok;
 }
 

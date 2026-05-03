@@ -5,9 +5,12 @@
 #include "ecs/systems/CollisionSystem2D.hpp"
 #include "ecs/systems/DamageOnContactSystem.hpp"
 #include "ecs/systems/FSMSystem.hpp"
+#include "ecs/systems/SensorSystem.hpp"
+#include "ecs/systems/WallCollisionSystem.hpp"
 #include "entities/PlayerEntity.hpp"
 #include "entities/EnemyEntity.hpp"
 #include "entities/BulletEntity.hpp"
+#include "entities/WallEntity.hpp"
 #include <vector>
 
 namespace Zhenzhu {
@@ -20,14 +23,17 @@ public:
     void Render() override;
 
 private:
+    void SpawnWalls();
     void SpawnEnemy();
     void SpawnBullet(Vec2 pos, Vec2 dir);
 
-    RenderSystem2D        m_RenderSystem;
-    MovementSystem2D      m_MovementSystem;
-    CollisionSystem2D     m_CollisionSystem;
-    DamageOnContactSystem m_DamageSystem;
-    FSMSystem             m_FSMSystem;
+    RenderSystem2D                  m_RenderSystem;
+    MovementSystem2D                m_MovementSystem;
+    SensorSystem                    m_SensorSystem;
+    WallCollisionSystem<WallTag>    m_WallCollision;
+    CollisionSystem2D               m_CollisionSystem;
+    DamageOnContactSystem           m_DamageSystem;
+    FSMSystem                       m_FSMSystem;
 
     ObjectPool<Bullet>   m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;

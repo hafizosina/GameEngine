@@ -10,6 +10,8 @@
 #include "ecs/components/Target.hpp"
 #include "ecs/components/FiniteStateMachine.hpp"
 #include "ecs/components/AIBehaviors.hpp"
+#include "ecs/components/Sensor.hpp"
+#include "entities/WallEntity.hpp"
 #include "resources/ResourceManager.hpp"
 #include "assets/AssetIDs.hpp"
 
@@ -36,13 +38,21 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     auto& target  = reg.Emplace<Target>(e);
     target.radius = 5.0f;
 
+    // Sensor detects walls and nearby enemies — Separate reads from this.
+    Sensor& sensor = reg.Emplace<Sensor>(e);
+    sensor.shape   = ColliderShape::Circle;
+    sensor.size    = {80.f, 80.f};
+    sensor.detect  = [](entt::entity target, entt::registry& r) {
+        return r.all_of<WallTag>(target) || r.all_of<EnemyTag>(target);
+    };
+
     auto& fsm = reg.Emplace<FiniteStateMachine>(e);
     fsm.AddState({
         0, "Chase",
         [](entt::registry& r, Entity self, float)  { AIBehaviors::FindNearest<IsPlayer>(r, self); },
         [](entt::registry& r, Entity self, float dt) {
             AIBehaviors::SeekTarget(r, self, dt, 120.f);
-            AIBehaviors::Separate<IsEnemy>(r, self, 60.f, 8.f);
+            AIBehaviors::Separate(r, self, 80.f, 40.f);
         },
         nullptr
     });

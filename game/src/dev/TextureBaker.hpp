@@ -13,6 +13,7 @@ public:
     static bool BakePlayer(const std::string& assetId, const std::string& outputPath);
     static bool BakeEnemy(const std::string& assetId, const std::string& outputPath);
     static bool BakeBullet(const std::string& assetId, const std::string& outputPath);
+    static bool BakeWoodenWall(const std::string& assetId, const std::string& outputPath);
 };
 
 } // namespace Zhenzhu

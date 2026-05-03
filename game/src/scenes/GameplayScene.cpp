@@ -6,8 +6,10 @@
 #include "input/InputManager.hpp"
 #include "data/DataManager.hpp"
 #include "utils/Logger.hpp"
+#include "utils/Math2D.hpp"
 #include "ecs/components/Health.hpp"
 #include <random>
+#include <cmath>
 
 namespace Zhenzhu {
 
@@ -18,6 +20,7 @@ void GameplayScene::OnEnter()
 
     m_Player = CreatePlayer(m_Registry, rm);
     m_BulletPool.PreWarm(30);
+    SpawnWalls();
 }
 
 void GameplayScene::OnExit()
@@ -75,8 +78,10 @@ void GameplayScene::Update(float dt)
     }
 
     // 5. Systems
-    m_FSMSystem.Update(m_Registry, dt);
+    m_SensorSystem.Update(m_Registry);       // populate sensor hits first
+    m_FSMSystem.Update(m_Registry, dt);      // AI reads sensor, decides velocity
     m_MovementSystem.Update(m_Registry, dt);
+    m_WallCollision.Update(m_Registry);      // resolve movers out of walls
     m_CollisionSystem.Update(m_Registry);
     m_DamageSystem.Update(m_Registry);
 }
@@ -94,6 +99,47 @@ void GameplayScene::Render()
 
     int hp = m_Registry.IsValid(m_Player) ? m_Registry.Get<Health>(m_Player).current : 0;
     DrawText(TextFormat("HEALTH: %d", hp), 20, 20, 20, WHITE);
+}
+
+void GameplayScene::SpawnWalls()
+{
+    auto* rm = ServiceLocator::Get<ResourceManager>();
+
+    // Fixed seed → same layout every run (change seed for a new map)
+    std::mt19937 gen(1337);
+    std::uniform_real_distribution<float> xDist(64.f, 1216.f);
+    std::uniform_real_distribution<float> yDist(64.f, 656.f);
+    std::uniform_int_distribution<int>    lenDist(1, 4);
+    std::uniform_int_distribution<int>    dirDist(0, 1); // 0=horizontal, 1=vertical
+
+    const Vec2 center = {640.f, 360.f};
+    const float clearRadius = 160.f; // keep area around player spawn free
+
+    int placed = 0;
+    int attempts = 0;
+
+    while (placed < 18 && attempts < 200) {
+        ++attempts;
+        Vec2 pos = {xDist(gen), yDist(gen)};
+
+        // Snap to 64-pixel grid for clean alignment
+        pos.x = std::floor(pos.x / 64.f) * 64.f + 32.f;
+        pos.y = std::floor(pos.y / 64.f) * 64.f + 32.f;
+
+        if (Math2D::Distance(pos, center) < clearRadius) continue;
+
+        int len = lenDist(gen);
+        int dir = dirDist(gen);
+
+        if (dir == 0)
+            CreateWallRow(m_Registry, rm, {pos.x - (len - 1) * 32.f, pos.y}, len);
+        else
+            CreateWallColumn(m_Registry, rm, {pos.x, pos.y - (len - 1) * 32.f}, len);
+
+        placed += len;
+    }
+
+    LOG_INFO("Spawned " + std::to_string(placed) + " wall tiles");
 }
 
 void GameplayScene::SpawnEnemy()
