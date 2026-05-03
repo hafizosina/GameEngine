@@ -128,9 +128,14 @@
 **Phase 8 (in progress):**
 - `engine/ecs/components/FiniteStateMachine.hpp` — StateID, FSMState, FSMTransition, FiniteStateMachine component
 - `engine/ecs/systems/FSMSystem.hpp` — evaluates transitions, calls onEnter/onUpdate/onExit, auto-enters state[0]
-- `engine/ecs/systems/AISystem.hpp` — updated to skip entities that carry FiniteStateMachine
+- `engine/ecs/components/AIBehaviors.hpp` — shared leaf actions/conditions used by all AI paradigms (SeekTarget, WithinTargetRange, FindNearest)
+- `engine/ecs/components/GOAPAgent.hpp` — goals, action pool, active plan; greedy single-action planner
+- `engine/ecs/systems/GOAPSystem.hpp` — selects highest-priority goal, picks cheapest valid action, drives onEnter/onUpdate/onExit
+- `engine/ecs/components/UtilityAIAgent.hpp` — scored action list with hysteresis and reselection cooldown
+- `engine/ecs/systems/UtilityAISystem.hpp` — scores all actions each tick, switches on hysteresis threshold
 - `engine/ecs/components/Contacts.hpp` — high-performance contact tracking (Phase 7 extension)
 - `engine/ecs/systems/CollisionSystem2D.hpp` — updated to use Contacts instead of EventBus (Phase 7 extension)
+- `AISystem.hpp` — deleted; FSMSystem/GOAPSystem/UtilityAISystem are the AI drivers
 
 **Phase docs (Phase0–7.md) have been removed — all phases are complete.**
 **Always read `docs/Phase7.md` before implementing Phase 7 code.**

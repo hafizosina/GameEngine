@@ -3,6 +3,7 @@
 #include "ecs/systems/RenderSystem2D.hpp"
 #include "ecs/systems/MovementSystem2D.hpp"
 #include "ecs/systems/CollisionSystem2D.hpp"
+#include "ecs/systems/DamageOnContactSystem.hpp"
 #include "ecs/components/Tags.hpp"
 #include "ecs/systems/FSMSystem.hpp"
 #include "pool/ObjectPool.hpp"
@@ -46,18 +47,17 @@ public:
 private:
     void SpawnEnemy();
     void SpawnBullet(Vec2 pos, Vec2 dir);
-    void HandleCollisions();
 
-    RenderSystem2D    m_RenderSystem;
-    MovementSystem2D  m_MovementSystem;
-    CollisionSystem2D m_CollisionSystem;
-    FSMSystem         m_FSMSystem;
+    RenderSystem2D        m_RenderSystem;
+    MovementSystem2D      m_MovementSystem;
+    CollisionSystem2D     m_CollisionSystem;
+    DamageOnContactSystem m_DamageSystem;
+    FSMSystem             m_FSMSystem;
 
     ObjectPool<Bullet> m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;
 
     float m_EnemySpawnTimer = 0.f;
-    int   m_PlayerHealth = 100;
     entt::entity m_Player = entt::null;
     
     // Limits

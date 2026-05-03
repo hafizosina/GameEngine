@@ -59,13 +59,9 @@ target_include_directories(zhenzhu-engine PUBLIC
 )
 
 # ── Game Executable ──────────────────────────────
-set(GAME_SOURCES 
-    "game/src/main.cpp"
-    "game/src/scenes/SplashScene.cpp"
-    "game/src/scenes/MainMenuScene.cpp"
-    "game/src/dev/TextureBaker.cpp"
-    "game/src/dev/SoundComposer.cpp"
-)
+# GLOB mirrors SConstruct's Glob() — both auto-discover all game .cpp files.
+# After adding a new .cpp, re-run cmake (touch CMakeLists.txt or re-configure).
+file(GLOB_RECURSE GAME_SOURCES "game/src/*.cpp")
 
 add_executable(MyGame ${GAME_SOURCES})
 
