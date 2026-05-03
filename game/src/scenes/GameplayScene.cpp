@@ -32,6 +32,7 @@ void GameplayScene::OnEnter()
     m_Registry.Emplace<IsTrigger>(m_Player);
     m_Registry.Emplace<IsPlayer>(m_Player);  // Engine tag for AI
     m_Registry.Emplace<PlayerTag>(m_Player); // Game tag
+    m_Registry.Emplace<DealsDamage>(m_Player, DealsDamage{30});
 
     Health& playerHealth = m_Registry.Emplace<Health>(m_Player, Health{100, 100, {}});
     playerHealth.onDied = [](entt::entity e, Registry& reg) {
@@ -78,7 +79,7 @@ void GameplayScene::Update(float dt)
     if (shooting) {
         Vec2 mousePos = input->GetMouse().GetPosition();
         Vec2 dir = (mousePos - pTrans.position).Normalize();
-        SpawnBullet(pTrans.position, dir);
+        SpawnBullet(pTrans.position + dir * 36.f, dir);
     }
 
     // 3. Enemy Spawning
