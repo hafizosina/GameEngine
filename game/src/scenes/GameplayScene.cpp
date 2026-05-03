@@ -46,8 +46,9 @@ void GameplayScene::Update(float dt)
                     input->GetAction("jump")->IsPressed();
 
     if (shooting) {
-        Vec2 mousePos = input->GetMouse().GetPosition();
-        Vec2 dir = (mousePos - pTrans.position).Normalize();
+        auto* renderer = ServiceLocator::Get<Renderer2D>();
+        Vec2 mousePos  = input->GetMouse().GetPosition() - renderer->GetViewportOffset();
+        Vec2 dir       = (mousePos - pTrans.position).Normalize();
         SpawnBullet(pTrans.position + dir * 36.f, dir);
     }
 

@@ -1,4 +1,6 @@
 #include "ui/core/UICanvas.hpp"
+#include "core/ServiceLocator.hpp"
+#include "renderer/Renderer2D.hpp"
 #include <raylib.h>
 
 namespace Zhenzhu {
@@ -30,6 +32,8 @@ void UICanvas::Render(const UIContext& ctx) {
 }
 
 Rect UICanvas::GetBounds() const {
+    auto* r = ServiceLocator::Get<Renderer2D>();
+    if (r) return { 0.f, 0.f, (float)r->GetGameWidth(), (float)r->GetGameHeight() };
     return { 0.f, 0.f, (float)GetScreenWidth(), (float)GetScreenHeight() };
 }
 

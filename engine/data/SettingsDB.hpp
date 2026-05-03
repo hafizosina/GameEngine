@@ -13,6 +13,7 @@ public:
         display.height     = Serializer::GetInt   (j,"display.height",     720);
         display.title      = Serializer::GetString(j,"display.title",      "Zhenzhu Engine");
         display.fullscreen = Serializer::GetBool  (j,"display.fullscreen", false);
+        display.resizable  = Serializer::GetBool  (j,"display.resizable",  false);
         display.vsync      = Serializer::GetBool  (j,"display.vsync",      true);
         display.targetFPS  = Serializer::GetInt   (j,"display.targetFPS",  60);
         // audio
@@ -38,6 +39,7 @@ public:
         m_Json["display"]["height"]      = display.height;
         m_Json["display"]["title"]       = display.title;
         m_Json["display"]["fullscreen"]  = display.fullscreen;
+        m_Json["display"]["resizable"]   = display.resizable;
         m_Json["display"]["vsync"]       = display.vsync;
         m_Json["display"]["targetFPS"]   = display.targetFPS;
         m_Json["audio"]["masterVolume"]  = audio.masterVolume;
@@ -59,6 +61,7 @@ public:
         int         height     = 720;
         std::string title      = "Zhenzhu Engine";
         bool        fullscreen = false;
+        bool        resizable  = false;
         bool        vsync      = true;
         int         targetFPS  = 60;
     } display;

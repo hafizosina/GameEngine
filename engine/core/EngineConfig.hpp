@@ -13,6 +13,7 @@ struct EngineConfig {
     std::string title        = "Zhenzhu Engine";
     int         targetFPS    = 60;
     bool        fullscreen   = false;
+    bool        resizable    = false;
     bool        vsync        = true;
 
     // Audio (used by AudioManager in Phase 5)

@@ -8,11 +8,17 @@ namespace Zhenzhu {
 
 class Renderer2D {
 public:
-    void Init();
+    void Init(int gameW = 1280, int gameH = 720);
     void Shutdown();
 
-    void Begin();                          // BeginDrawing + ClearBackground
-    void End();                            // EndDrawing
+    // Offset of the game viewport on the actual screen (non-zero in fullscreen).
+    // Subtract from raw mouse position to get game-space coordinates.
+    Vec2 GetViewportOffset() const { return {m_OffsetX, m_OffsetY}; }
+    int  GetGameWidth()  const { return m_GameW; }
+    int  GetGameHeight() const { return m_GameH; }
+
+    void Begin();  // renders into game-resolution RenderTexture
+    void End();    // composites RenderTexture centered on screen, black bars
     void BeginCamera(const ::Camera2D& cam); // BeginMode2D
     void EndCamera();                      // EndMode2D
 
@@ -42,7 +48,12 @@ public:
     void DrawLine(Vec2 start, Vec2 end, float thick, Color4 color);
 
 private:
-    Color4 m_ClearColor{20, 20, 25, 255};
+    Color4          m_ClearColor{20, 20, 25, 255};
+    RenderTexture2D m_RenderTex  = {};
+    int             m_GameW      = 1280;
+    int             m_GameH      = 720;
+    float           m_OffsetX    = 0.f;
+    float           m_OffsetY    = 0.f;
 };
 
 } // namespace Zhenzhu

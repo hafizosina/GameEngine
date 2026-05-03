@@ -11,20 +11,39 @@ namespace {
     inline ::Color     ToRL(Color4 c) { return { c.r, c.g, c.b, c.a }; }
 }
 
-void Renderer2D::Init() {
-    LOG_INFO("Renderer2D initialized");
+void Renderer2D::Init(int gameW, int gameH) {
+    m_GameW     = gameW;
+    m_GameH     = gameH;
+    m_RenderTex = LoadRenderTexture(gameW, gameH);
+    LOG_INFO("Renderer2D initialized (" + std::to_string(gameW) + "x" + std::to_string(gameH) + ")");
 }
 
 void Renderer2D::Shutdown() {
+    UnloadRenderTexture(m_RenderTex);
     LOG_INFO("Renderer2D shutdown");
 }
 
 void Renderer2D::Begin() {
-    BeginDrawing();
+    BeginTextureMode(m_RenderTex);
     ClearBackground(ToRL(m_ClearColor));
 }
 
 void Renderer2D::End() {
+    EndTextureMode();
+
+    // Recalculate offset every frame so it stays correct after window resize
+    int screenW = GetScreenWidth();
+    int screenH = GetScreenHeight();
+    m_OffsetX = (screenW - m_GameW) * 0.5f;
+    m_OffsetY = (screenH - m_GameH) * 0.5f;
+
+    // Composite game viewport onto actual screen — centered, 1:1 pixels, black bars
+    ::Rectangle src  = { 0, 0, (float)m_GameW, -(float)m_GameH }; // flip Y (OpenGL convention)
+    ::Rectangle dest = { m_OffsetX, m_OffsetY, (float)m_GameW, (float)m_GameH };
+
+    BeginDrawing();
+    ClearBackground({0, 0, 0, 255});
+    DrawTexturePro(m_RenderTex.texture, src, dest, {0, 0}, 0.f, WHITE);
     EndDrawing();
 }
 

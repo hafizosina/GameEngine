@@ -8,7 +8,10 @@ void Window::Create(const EngineConfig& cfg)
 {
     SetTargetFPS(cfg.targetFPS);
 
-    if (cfg.vsync) SetConfigFlags(FLAG_VSYNC_HINT);
+    unsigned int flags = 0;
+    if (cfg.vsync)     flags |= FLAG_VSYNC_HINT;
+    if (cfg.resizable) flags |= FLAG_WINDOW_RESIZABLE;
+    if (flags) SetConfigFlags(flags);
 
     // Initialize with config defaults first
     InitWindow(cfg.windowWidth, cfg.windowHeight, cfg.title.c_str());

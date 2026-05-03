@@ -22,6 +22,7 @@ void Application::Init(const std::string& gameRoot) {
     m_Config.title        = s.display.title;
     m_Config.targetFPS    = s.display.targetFPS;
     m_Config.fullscreen   = s.display.fullscreen;
+    m_Config.resizable    = s.display.resizable;
     m_Config.vsync        = s.display.vsync;
 
     m_Window.Create(m_Config);
@@ -34,7 +35,7 @@ void Application::Init(const std::string& gameRoot) {
 
     // ── Phase 3 ──────────────────────────────────────
     m_Input.Init(&m_Data.keybinds);
-    m_Renderer.Init();
+    m_Renderer.Init(m_Config.windowWidth, m_Config.windowHeight);
 
     // ── Phase 5 ──────────────────────────────────────
     m_Audio.Init(&m_Data.settings);
