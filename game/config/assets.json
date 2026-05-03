@@ -71,6 +71,30 @@
       "type":        "TEXTURE",
       "real":        "assets/textures/tiles/grass_autotile.png",
       "placeholder": "assets/placeholder/tile_grass.png"
+    },
+    {
+      "id":          "tex.tile.sand",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/tiles/sand_autotile.png",
+      "placeholder": "assets/placeholder/tile_sand.png"
+    },
+    {
+      "id":          "tex.tile.water",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/tiles/water_autotile.png",
+      "placeholder": "assets/placeholder/tile_water.png"
+    },
+    {
+      "id":          "tex.tile.stone",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/tiles/stone_autotile.png",
+      "placeholder": "assets/placeholder/tile_stone.png"
+    },
+    {
+      "id":          "tex.tile.dirt",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/tiles/dirt_autotile.png",
+      "placeholder": "assets/placeholder/tile_dirt.png"
     }
   ]
 }

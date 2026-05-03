@@ -62,11 +62,13 @@ void MainMenuScene::OnEnter()
     };
 
     panel->AddChild(createBtn("NEW WORLD", []() {
-        LOG_INFO("New World clicked!");
+        LOG_INFO("New World clicked! (Reserved for tilemap experimentation)");
+    }));
+    panel->AddChild(createBtn("LOAD WORLD", []() { 
+        LOG_INFO("Loading last world..."); 
         auto* sm = ServiceLocator::Get<SceneManager>();
         sm->Switch(std::make_unique<GameplayScene>(), std::make_unique<FadeTransition>(1.0f));
     }));
-    panel->AddChild(createBtn("LOAD WORLD", []() { LOG_INFO("Load World clicked!"); }));
     panel->AddChild(createBtn("SETTINGS", []() { LOG_INFO("Settings clicked!"); }));
 
     panel->AddChild(createBtn("EXIT", []() {

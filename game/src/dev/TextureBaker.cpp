@@ -18,7 +18,33 @@ bool TextureBaker::Bake(const std::string& assetId, const std::string& outputPat
     if (assetId == "tex.enemy")  return BakeEnemy(assetId, outputPath);
     if (assetId == "tex.bullet") return BakeBullet(assetId, outputPath);
     if (assetId == "tex.wall")       return BakeWoodenWall(assetId, outputPath);
-    if (assetId == "tex.tile.grass") return BakeGrassTile(assetId, outputPath);
+
+    // Common Base Colors
+    Color dirtBase  = {148, 112, 68, 255};
+    Color dirtLight = {172, 134, 88, 255};
+    Color dirtDark  = {115,  85, 52, 255};
+    Color transparent = { 0, 0, 0, 0 };
+
+    if (assetId == "tex.tile.grass") {
+        TerrainStyle style = { {68, 155, 45, 255}, {92, 198, 65, 255}, {48, 118, 32, 255}, transparent, false };
+        return BakeAutotileSheet(assetId, outputPath, style);
+    }
+    if (assetId == "tex.tile.sand") {
+        TerrainStyle style = { {210, 185, 130, 255}, {230, 210, 160, 255}, {180, 155, 100, 255}, transparent, false };
+        return BakeAutotileSheet(assetId, outputPath, style);
+    }
+    if (assetId == "tex.tile.water") {
+        TerrainStyle style = { {40, 120, 200, 200}, {80, 160, 230, 220}, {20, 80, 160, 220}, transparent, true };
+        return BakeAutotileSheet(assetId, outputPath, style);
+    }
+    if (assetId == "tex.tile.stone") {
+        TerrainStyle style = { {120, 120, 120, 255}, {150, 150, 150, 255}, {80, 80, 80, 255}, transparent, false };
+        return BakeAutotileSheet(assetId, outputPath, style);
+    }
+    if (assetId == "tex.tile.dirt") {
+        TerrainStyle style = { dirtBase, dirtLight, dirtDark, dirtBase, false };
+        return BakeAutotileSheet(assetId, outputPath, style);
+    }
 
     return BakePlaceholder(assetId, outputPath);
 }
@@ -275,35 +301,17 @@ bool TextureBaker::BakeWoodenWall(const std::string& assetId, const std::string&
     return ok;
 }
 
-bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& outputPath)
+bool TextureBaker::BakeAutotileSheet(const std::string& assetId, const std::string& outputPath, const TerrainStyle& style)
 {
-    LOG_INFO("Baking grass autotile sheet for: " + assetId);
+    LOG_INFO("Baking autotile sheet for: " + assetId);
     std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
 
-    // Dual-grid autotile sheet: 4 columns × 4 rows = 16 variants.
-    // Variant index = 4-bit bitmask: bit0=TL, bit1=TR, bit2=BL, bit3=BR.
-    // Each bit = 1 means that data-grid corner is "grass"; 0 means "dirt/other".
-    // Each quadrant of the tile (8×8) is drawn as grass or dirt accordingly.
-    constexpr int TILE = 32;         // Increased to 32 for a clearer reference
-    constexpr int HALF = TILE / 2;   // 16 — one quadrant
-    constexpr int W    = TILE * 4;   // 128
-    constexpr int H    = TILE * 4;   // 128
-
-    const Color gBase  = {68,  155, 45, 255};  // Grass
-    const Color gLight = {92,  198, 65, 255};
-    const Color gDark  = {48,  118, 32, 255};
-    const Color dBase  = {148, 112, 68, 255};  // Dirt
-    const Color dLight = {172, 134, 88, 255};
-    const Color dDark  = {115,  85, 52, 255};
+    constexpr int TILE = 32;
+    constexpr int HALF = TILE / 2;
+    constexpr int W    = TILE * 4;
+    constexpr int H    = TILE * 4;
 
     Image img = GenImageColor(W, H, BLANK);
-
-    // Deterministic Hash for noise
-    auto Hash = [](int x, int y) -> float {
-        uint32_t h = (uint32_t)x * 374761393U + (uint32_t)y * 668265263U;
-        h = (h ^ (h >> 13)) * 1274126177U;
-        return (float)(h & 0x7FFFFFFF) / (float)0x7FFFFFFF;
-    };
 
     // Smoothing Helpers
     auto Lerp = [](float a, float b, float t) { return a + t * (b - a); };
@@ -320,15 +328,12 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
         int iy = (int)std::floor(y);
         float fx = x - ix;
         float fy = y - iy;
-
         float a = Hash2D(ix, iy);
         float b = Hash2D(ix + 1, iy);
         float c = Hash2D(ix, iy + 1);
         float d = Hash2D(ix + 1, iy + 1);
-
         float ux = SmoothStep(fx);
         float uy = SmoothStep(fy);
-
         return Lerp(Lerp(a, b, ux), Lerp(c, d, ux), uy);
     };
 
@@ -349,20 +354,16 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
             (mask & 4) != 0, (mask & 8) != 0
         };
 
-        // ── Render Tile Pixels ───────────────────────────────────────
         for (int ly = 0; ly < TILE; ly++) {
             for (int lx = 0; lx < TILE; lx++) {
                 int px = ox + lx;
                 int py = oy + ly;
 
-                // Base smooth noise
                 float n = ValueNoise((float)px * 0.15f, (float)py * 0.15f);
-                // Extra crunch for the edges
                 float edgeCrunch = Hash2D(px, py);
 
-                // Determine base quadrant
                 int q = (lx < HALF ? 0 : 1) + (ly < HALF ? 0 : 2);
-                bool isGrass = corners[q];
+                bool isPrimary = corners[q];
 
                 // ── Jagged Boundary Transition ───────────────────────
                 float distToEdgeX = std::abs((float)lx - HALF + 0.5f);
@@ -370,35 +371,40 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
 
                 auto JaggedEdge = [&](float dist, int otherQ) {
                     if (dist < 3.5f) {
-                        if (corners[otherQ] != isGrass) {
-                            // Hard threshold flip for "crunchy" jagged look
-                            if (edgeCrunch > (dist / 4.0f) + 0.2f) isGrass = corners[otherQ];
+                        if (corners[otherQ] != isPrimary) {
+                            if (edgeCrunch > (dist / 4.0f) + 0.2f) isPrimary = corners[otherQ];
                         }
                     }
                 };
-                
                 JaggedEdge(distToEdgeX, (lx < HALF) ? q + 1 : q - 1);
                 JaggedEdge(distToEdgeY, (ly < HALF) ? q + 2 : q - 2);
 
-                // ── Color Selection (Post-Transition) ─────────────────
-                Color c = isGrass ? gBase : dBase;
+                // ── Color Selection ──────────────────────────────────
+                Color c = isPrimary ? style.base : style.transition;
                 
-                // Subtle organic shading (Surface only)
-                if (n < 0.25f) {
-                    float t = (0.25f - n) / 0.25f;
-                    c.r = (unsigned char)Lerp(c.r, isGrass ? gDark.r : dDark.r, t);
-                    c.g = (unsigned char)Lerp(c.g, isGrass ? gDark.g : dDark.g, t);
-                    c.b = (unsigned char)Lerp(c.b, isGrass ? gDark.b : dDark.b, t);
-                } else if (n > 0.75f) {
-                    float t = (n - 0.75f) / 0.25f;
-                    c.r = (unsigned char)Lerp(c.r, isGrass ? gLight.r : dLight.r, t);
-                    c.g = (unsigned char)Lerp(c.g, isGrass ? gLight.g : dLight.g, t);
-                    c.b = (unsigned char)Lerp(c.b, isGrass ? gLight.b : dLight.b, t);
-                }
+                // Only shade the primary material
+                if (isPrimary) {
+                    Color light = style.light;
+                    Color dark = style.dark;
 
-                // Add very subtle tufts
-                if (isGrass && edgeCrunch > 0.98f) {
-                    ImageDrawPixel(&img, px, py, gLight);
+                    if (n < 0.25f) {
+                        float t = (0.25f - n) / 0.25f;
+                        c.r = (unsigned char)Lerp(c.r, dark.r, t);
+                        c.g = (unsigned char)Lerp(c.g, dark.g, t);
+                        c.b = (unsigned char)Lerp(c.b, dark.b, t);
+                    } else if (n > 0.75f) {
+                        float t = (n - 0.75f) / 0.25f;
+                        c.r = (unsigned char)Lerp(c.r, light.r, t);
+                        c.g = (unsigned char)Lerp(c.g, light.g, t);
+                        c.b = (unsigned char)Lerp(c.b, light.b, t);
+                    }
+
+                    // Liquid ripples or Rock grain
+                    if (style.isLiquid) {
+                        if ((px % 10 == (int)(n * 10)) && n > 0.6f) c = style.light;
+                    } else {
+                        if (edgeCrunch > 0.985f) c = style.light;
+                    }
                 }
 
                 ImageDrawPixel(&img, px, py, c);
@@ -408,11 +414,7 @@ bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& 
 
     bool ok = ExportImage(img, outputPath.c_str());
     UnloadImage(img);
-
-    if (ok)  LOG_INFO("Baked: " + outputPath);
-    else     LOG_ERROR("Failed to bake: " + outputPath);
     return ok;
 }
 
-
-}  // namespace Zhenzhu
+} // namespace Zhenzhu

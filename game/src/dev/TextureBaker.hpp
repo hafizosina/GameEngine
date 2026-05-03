@@ -1,7 +1,16 @@
 #pragma once
 #include <string>
+#include <raylib.h>
 
 namespace Zhenzhu {
+
+struct TerrainStyle {
+    Color base;
+    Color light;
+    Color dark;
+    Color transition; // The "underneath" color (usually Dirt)
+    bool  isLiquid = false;
+};
 
 class TextureBaker {
 public:
@@ -16,7 +25,7 @@ public:
     static bool BakeWoodenWall(const std::string& assetId, const std::string& outputPath);
 
     // Tilemap autotile sheets
-    static bool BakeGrassTile(const std::string& assetId, const std::string& outputPath);
+    static bool BakeAutotileSheet(const std::string& assetId, const std::string& outputPath, const TerrainStyle& style);
 };
 
 } // namespace Zhenzhu
