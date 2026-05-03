@@ -3,7 +3,7 @@
         "width": 1280,
         "height": 720,
         "title": "Zhenzhu Engine - Tested",
-        "fullscreen": false,
+        "fullscreen": true,
         "vsync": true,
         "targetFPS": 60
     },
@@ -16,7 +16,7 @@
     "gameplay": {
         "language": "en",
         "difficulty": "normal",
-        "showFPS": true
+        "showFPS": false
     },
     "debug": {
         "drawCollisions": false
