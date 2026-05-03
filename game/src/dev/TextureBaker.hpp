@@ -14,6 +14,9 @@ public:
     static bool BakeEnemy(const std::string& assetId, const std::string& outputPath);
     static bool BakeBullet(const std::string& assetId, const std::string& outputPath);
     static bool BakeWoodenWall(const std::string& assetId, const std::string& outputPath);
+
+    // Tilemap autotile sheets
+    static bool BakeGrassTile(const std::string& assetId, const std::string& outputPath);
 };
 
 } // namespace Zhenzhu

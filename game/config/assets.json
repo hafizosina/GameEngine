@@ -65,6 +65,12 @@
       "type":        "TEXTURE",
       "real":        "assets/textures/game/wall.png",
       "placeholder": "assets/placeholder/wall.png"
+    },
+    {
+      "id":          "tex.tile.grass",
+      "type":        "TEXTURE",
+      "real":        "assets/textures/tiles/grass_autotile.png",
+      "placeholder": "assets/placeholder/tile_grass.png"
     }
   ]
 }

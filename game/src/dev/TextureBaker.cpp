@@ -16,7 +16,8 @@ bool TextureBaker::Bake(const std::string& assetId, const std::string& outputPat
     if (assetId == "tex.player") return BakePlayer(assetId, outputPath);
     if (assetId == "tex.enemy")  return BakeEnemy(assetId, outputPath);
     if (assetId == "tex.bullet") return BakeBullet(assetId, outputPath);
-    if (assetId == "tex.wall")   return BakeWoodenWall(assetId, outputPath);
+    if (assetId == "tex.wall")       return BakeWoodenWall(assetId, outputPath);
+    if (assetId == "tex.tile.grass") return BakeGrassTile(assetId, outputPath);
 
     return BakePlaceholder(assetId, outputPath);
 }
@@ -272,5 +273,74 @@ bool TextureBaker::BakeWoodenWall(const std::string& assetId, const std::string&
     else     LOG_ERROR("Failed to bake: " + outputPath);
     return ok;
 }
+
+bool TextureBaker::BakeGrassTile(const std::string& assetId, const std::string& outputPath)
+{
+    LOG_INFO("Baking grass autotile sheet for: " + assetId);
+    std::filesystem::create_directories(std::filesystem::path(outputPath).parent_path());
+
+    // Dual-grid autotile sheet: 4 columns × 4 rows = 16 variants.
+    // Variant index = 4-bit bitmask: bit0=TL, bit1=TR, bit2=BL, bit3=BR.
+    // Each bit = 1 means that data-grid corner is "grass"; 0 means "dirt/other".
+    // Each quadrant of the tile (8×8) is drawn as grass or dirt accordingly.
+    constexpr int TILE = 32;         // Increased to 32 for a clearer reference
+    constexpr int HALF = TILE / 2;   // 16 — one quadrant
+    constexpr int W    = TILE * 4;   // 128
+    constexpr int H    = TILE * 4;   // 128
+
+    const Color gBase  = {68,  155, 45, 255};  // Grass (Bit = 1)
+    const Color dBase  = {148, 112, 68, 255};  // Dirt  (Bit = 0)
+    const Color grid   = {255, 255, 255, 30};  // Subtle grid lines
+
+    Image img = GenImageColor(W, H, BLANK);
+
+    const int layout[16] = {
+        4,  10, 13, 12,  // Row 0: BL, TR+BR, TL+BL+BR, BL+BR
+        9,  14, 15, 7,   // Row 1: TL+BR, TR+BL+BR, ALL, TL+TR+BL
+        2,  3,  11, 5,   // Row 2: TR, TL+TR, TL+TR+BR, TL+BL
+        0,  8,  6,  1    // Row 3: None, BR, TR+BL, TL
+    };
+
+    for (int i = 0; i < 16; i++) {
+        int mask = layout[i];
+        int ox = (i % 4) * TILE;
+        int oy = (i / 4) * TILE;
+
+        // TL=bit0 TR=bit1 BL=bit2 BR=bit3
+        bool corners[4] = {
+            (mask & 1) != 0,   // TL
+            (mask & 2) != 0,   // TR
+            (mask & 4) != 0,   // BL
+            (mask & 8) != 0,   // BR
+        };
+
+        const int qx[4] = {0,    HALF, 0,    HALF};
+        const int qy[4] = {0,    0,    HALF, HALF};
+
+        // ── Fill each quadrant ───────────────────────────────────────
+        for (int q = 0; q < 4; q++) {
+            Color c = corners[q] ? gBase : dBase;
+            ImageDrawRectangle(&img, ox + qx[q], oy + qy[q], HALF, HALF, c);
+            
+            // Reference markers
+            if (corners[q]) {
+                ImageDrawRectangle(&img, ox + qx[q] + HALF/2 - 2, oy + qy[q] + HALF/2 - 2, 4, 4, {255,255,255,100});
+            }
+        }
+
+        // Draw tile border and quadrant divider
+        ImageDrawRectangleLines(&img, { (float)ox, (float)oy, (float)TILE, (float)TILE }, 1, grid);
+        ImageDrawRectangle(&img, ox + HALF, oy, 1, TILE, grid);
+        ImageDrawRectangle(&img, ox, oy + HALF, TILE, 1, grid);
+    }
+
+    bool ok = ExportImage(img, outputPath.c_str());
+    UnloadImage(img);
+
+    if (ok)  LOG_INFO("Baked: " + outputPath);
+    else     LOG_ERROR("Failed to bake: " + outputPath);
+    return ok;
+}
+
 
 }  // namespace Zhenzhu
