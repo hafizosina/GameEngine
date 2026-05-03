@@ -39,15 +39,10 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     auto& target  = reg.Emplace<Target>(e);
     target.radius = 5.0f;
 
-    // Sensor detects walls, other enemies, and the player.
+    // Sensor sees all SolidObjects in range — AI filters hits by tag.
     Sensor& sensor = reg.Emplace<Sensor>(e);
     sensor.shape   = ColliderShape::Circle;
     sensor.size    = {200.f, 200.f};
-    sensor.detect  = [](entt::entity target, entt::registry& r) {
-        return r.all_of<WallTag>(target) ||
-               r.all_of<EnemyTag>(target) ||
-               r.all_of<IsPlayer>(target);
-    };
 
     reg.Emplace<WanderBehavior>(e);
 
