@@ -44,7 +44,7 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
     int   damage = dm->gameConfig.GetInt  ("player.damage",  30);
 
     Entity e = reg.CreateEntity();
-    reg.Emplace<Transform2D>(e, Vec2{640, 360});
+    reg.Emplace<Transform2D>(e, Vec2{0, 0});
     reg.Emplace<Velocity2D>(e);
     reg.Emplace<PlayerController>(e, PlayerController{speed});
     reg.Emplace<IsTrigger>(e);

@@ -129,24 +129,25 @@ void GameplayScene::SpawnWalls()
 
     // Fixed seed → same layout every run (change seed for a new map)
     std::mt19937 gen(1337);
-    std::uniform_real_distribution<float> xDist(64.f, 1216.f);
-    std::uniform_real_distribution<float> yDist(64.f, 656.f);
+    // Expand ranges to fit the 100x100 grid (roughly -1600 to 1600)
+    std::uniform_real_distribution<float> xDist(-1400.f, 1400.f);
+    std::uniform_real_distribution<float> yDist(-1400.f, 1400.f);
     std::uniform_int_distribution<int>    lenDist(1, 4);
     std::uniform_int_distribution<int>    dirDist(0, 1); // 0=horizontal, 1=vertical
 
-    const Vec2 center = {640.f, 360.f};
-    const float clearRadius = 160.f; // keep area around player spawn free
+    const Vec2 center = {0.f, 0.f};
+    const float clearRadius = 200.f; // keep area around player spawn free
 
     int placed = 0;
     int attempts = 0;
 
-    while (placed < 18 && attempts < 200) {
+    while (placed < 50 && attempts < 500) {
         ++attempts;
         Vec2 pos = {xDist(gen), yDist(gen)};
 
-        // Snap to 64-pixel grid for clean alignment
-        pos.x = std::floor(pos.x / 64.f) * 64.f + 32.f;
-        pos.y = std::floor(pos.y / 64.f) * 64.f + 32.f;
+        // Snap to 32-pixel grid for clean alignment with tiles
+        pos.x = std::floor(pos.x / 32.f) * 32.f + 16.f;
+        pos.y = std::floor(pos.y / 32.f) * 32.f + 16.f;
 
         if (Math2D::Distance(pos, center) < clearRadius) continue;
 
@@ -154,9 +155,9 @@ void GameplayScene::SpawnWalls()
         int dir = dirDist(gen);
 
         if (dir == 0)
-            CreateWallRow(m_Registry, rm, {pos.x - (len - 1) * 32.f, pos.y}, len);
+            CreateWallRow(m_Registry, rm, {pos.x - (len - 1) * 16.f, pos.y}, len);
         else
-            CreateWallColumn(m_Registry, rm, {pos.x, pos.y - (len - 1) * 32.f}, len);
+            CreateWallColumn(m_Registry, rm, {pos.x, pos.y - (len - 1) * 16.f}, len);
 
         placed += len;
     }
@@ -171,7 +172,8 @@ void GameplayScene::SpawnEnemy()
     std::uniform_real_distribution<float> angleDist(0, 2.0f * PI);
 
     float angle   = angleDist(gen);
-    Vec2 spawnPos = {640 + std::cos(angle) * 800, 360 + std::sin(angle) * 500};
+    // Spawn at distance from world center (0,0)
+    Vec2 spawnPos = {std::cos(angle) * 1000, std::sin(angle) * 1000};
 
     auto* rm = ServiceLocator::Get<ResourceManager>();
     CreateEnemy(m_Registry, rm, spawnPos);
@@ -215,25 +217,29 @@ void GameplayScene::SetupTilemap()
     ground.walkable    = true;
     ground.autotiled   = true;
 
-    // Fill a 64×48 area with Dirt (origin at tile 0,0 = world 0,0)
-    for (int y = 0; y < 48; ++y)
-        for (int x = 0; x < 64; ++x)
+    // Fill a 100x100 area with Dirt (from -50 to 50)
+    for (int y = -50; y < 50; ++y)
+        for (int x = -50; x < 50; ++x)
             SetTerrain(ground, x, y, 1);
 
-    // Paint a large Grass region in the centre
-    for (int y = 4; y < 36; ++y)
-        for (int x = 4; x < 48; ++x)
+    // Paint Grass regions
+    for (int y = -20; y < 20; ++y)
+        for (int x = -20; x < 20; ++x)
             SetTerrain(ground, x, y, 2);
 
-    // Paint a Water pond
-    for (int y = 14; y < 22; ++y)
-        for (int x = 22; x < 30; ++x)
+    // Paint some Water ponds
+    for (int y = 5; y < 15; ++y)
+        for (int x = 10; x < 20; ++x)
             SetTerrain(ground, x, y, 3);
 
-    // Bake the full area (DualGridAutotiler expands by 1 internally)
-    DualGridAutotiler::Bake(ground, m_TileMap.terrainRegistry, {0, 0, 64, 48});
+    for (int y = -15; y < -5; ++y)
+        for (int x = -25; x < -15; ++x)
+            SetTerrain(ground, x, y, 3);
 
-    LOG_INFO("Tilemap ground layer baked");
+    // Bake the full area
+    DualGridAutotiler::Bake(ground, m_TileMap.terrainRegistry, {-50, -50, 100, 100});
+
+    LOG_INFO("Tilemap ground layer baked (100x100)");
 }
 
 } // namespace Zhenzhu
