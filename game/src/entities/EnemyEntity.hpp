@@ -7,7 +7,6 @@
 #include "ecs/components/Health.hpp"
 #include "ecs/components/DealsDamage.hpp"
 #include "ecs/components/Tags.hpp"
-#include "ecs/components/Target.hpp"
 #include "ecs/components/FiniteStateMachine.hpp"
 #include "ai/AIBehaviors.hpp"
 #include "ecs/components/Sensor.hpp"
@@ -42,9 +41,6 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     reg.Emplace<Health>(e, Health{health, health, {}});
     reg.Emplace<DealsDamage>(e, DealsDamage{damage});
 
-    auto& target  = reg.Emplace<Target>(e);
-    target.radius = 5.0f;
-
     // Sensor sees all SolidObjects in range — AI filters hits by tag.
     Sensor& sensor = reg.Emplace<Sensor>(e);
     sensor.shape   = ColliderShape::Circle;
@@ -69,10 +65,10 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
     // State 1: Chase — seek player at full speed, separate from obstacles.
     fsm.AddState({
         1, "Chase",
-        [](entt::registry& r, Entity self, float) { AIBehaviors::FindInSensor<IsPlayer>(r, self); },
+        nullptr,
         [](entt::registry& r, Entity self, float dt) {
             float spd = r.get<EnemyAI>(self).runSpeed;
-            AIBehaviors::SeekTarget(r, self, dt, spd);
+            AIBehaviors::SeekFirst<IsPlayer>(r, self, dt, spd, 5.f);
             AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
         },
         nullptr

@@ -1,11 +1,18 @@
 #pragma once
 #include <cmath>
 #include <random>
+#include "ecs/Entity.hpp"
 #include "ecs/components/Transform2D.hpp"
 #include "ecs/components/Velocity2D.hpp"
-#include "ecs/components/Target.hpp"
 #include "ecs/components/Sensor.hpp"
 #include "utils/Math2D.hpp"
+
+// NOTE — Future: EntityMemory component
+// If entities need to remember what they saw after the target leaves sensor range
+// (e.g. last known player position, remembered food location), add an EntityMemory
+// component that stores {position, tag, timestamp}. AIBehaviors can then fall back
+// to memory when sensor hits are empty. Keep it separate from Sensor so the cost
+// is only paid by entities that actually need it.
 
 namespace Zhenzhu {
 
@@ -21,27 +28,30 @@ struct WanderBehavior {
 // FSM onEnter/onUpdate/onExit or call from a Script component.
 class AIBehaviors {
 public:
-    // ── Seek ─────────────────────────────────────────────────────────
-    // Move toward the entity's Target component at speed px/s.
-    static void SeekTarget(entt::registry& reg, Entity self, float /*dt*/, float speed) {
-        if (!reg.all_of<Transform2D, Velocity2D, Target>(self)) return;
+
+    // ── SeekFirst<Tag> ────────────────────────────────────────────────
+    // Moves toward the first Sensor hit that carries Tag at speed px/s.
+    // Stops within arrivalRadius of the target. Does nothing if no hit found.
+    template<typename Tag>
+    static void SeekFirst(entt::registry& reg, Entity self, float /*dt*/, float speed,
+                          float arrivalRadius = 5.f) {
+        if (!reg.all_of<Transform2D, Velocity2D, Sensor>(self)) return;
 
         auto& trans  = reg.get<Transform2D>(self);
         auto& vel    = reg.get<Velocity2D>(self);
-        auto& target = reg.get<Target>(self);
+        auto& sensor = reg.get<Sensor>(self);
 
-        if (target.entity != NullEntity && reg.valid(target.entity)) {
-            if (reg.all_of<Transform2D>(target.entity)) {
-                target.position  = reg.get<Transform2D>(target.entity).position;
-                target.hasTarget = true;
-            }
+        for (int i = 0; i < sensor.hitCount; ++i) {
+            entt::entity h = sensor.hits[i];
+            if (!reg.valid(h) || !reg.all_of<Tag, Transform2D>(h)) continue;
+
+            Vec2  toTarget = reg.get<Transform2D>(h).position - trans.position;
+            float dist     = toTarget.Length();
+            vel.linear = (dist > arrivalRadius) ? toTarget.Normalize() * speed : Vec2{0, 0};
+            return;
         }
 
-        if (!target.hasTarget) { vel.linear = {0, 0}; return; }
-
-        Vec2  toTarget = target.position - trans.position;
-        float dist     = toTarget.Length();
-        vel.linear = (dist > target.radius) ? toTarget.Normalize() * speed : Vec2{0, 0};
+        vel.linear = {0, 0};
     }
 
     // ── Wander ───────────────────────────────────────────────────────
@@ -63,8 +73,8 @@ public:
         vel.linear = wb.direction * speed;
     }
 
-    // ── TagInSensor ───────────────────────────────────────────────────
-    // FSM condition: true when any sensor hit carries the given tag.
+    // ── TagInSensor<Tag> ──────────────────────────────────────────────
+    // FSM condition: true when any Sensor hit carries the given tag.
     template<typename Tag>
     static bool TagInSensor(entt::registry& reg, Entity self, float /*dt*/) {
         if (!reg.all_of<Sensor>(self)) return false;
@@ -76,14 +86,20 @@ public:
         return false;
     }
 
-    // ── WithinTargetRange ─────────────────────────────────────────────
-    // FSM condition: true when entity is within Target.radius of its target.
-    static bool WithinTargetRange(entt::registry& reg, Entity self, float /*dt*/) {
-        if (!reg.all_of<Transform2D, Target>(self)) return false;
+    // ── WithinRange<Tag> ──────────────────────────────────────────────
+    // FSM condition: true when the first Tag hit in Sensor is within arrivalRadius.
+    template<typename Tag>
+    static bool WithinRange(entt::registry& reg, Entity self, float arrivalRadius) {
+        if (!reg.all_of<Transform2D, Sensor>(self)) return false;
         auto& trans  = reg.get<Transform2D>(self);
-        auto& target = reg.get<Target>(self);
-        if (!target.hasTarget) return false;
-        return Math2D::Distance(trans.position, target.position) <= target.radius;
+        auto& sensor = reg.get<Sensor>(self);
+        for (int i = 0; i < sensor.hitCount; ++i) {
+            entt::entity h = sensor.hits[i];
+            if (reg.valid(h) && reg.all_of<Tag, Transform2D>(h))
+                return Math2D::Distance(trans.position,
+                                        reg.get<Transform2D>(h).position) <= arrivalRadius;
+        }
+        return false;
     }
 
     // ── Separate ──────────────────────────────────────────────────────
@@ -104,10 +120,10 @@ public:
             entt::entity other = sensor.hits[i];
             if (!reg.valid(other) || !reg.all_of<Transform2D>(other)) continue;
 
-            auto& oTrans = reg.get<Transform2D>(other);
-            float dist   = Math2D::Distance(trans.position, oTrans.position);
+            float dist = Math2D::Distance(trans.position,
+                                          reg.get<Transform2D>(other).position);
             if (dist > 0.f && dist < radius) {
-                Vec2 away = (trans.position - oTrans.position).Normalize();
+                Vec2 away = (trans.position - reg.get<Transform2D>(other).position).Normalize();
                 steer = steer + away * (radius - dist);
                 ++count;
             }
@@ -115,28 +131,6 @@ public:
 
         if (count > 0)
             vel.linear = vel.linear + steer.Normalize() * strength;
-    }
-
-    // ── FindInSensor ─────────────────────────────────────────────────
-    // Sets the entity's Target to the first sensor hit that has the given tag.
-    // Use in FSM onEnter after a sensor-based transition — the player is
-    // already in hits[] so no global scan is needed.
-    template<typename Tag>
-    static void FindInSensor(entt::registry& reg, Entity self) {
-        if (!reg.all_of<Transform2D, Target, Sensor>(self)) return;
-
-        auto& target = reg.get<Target>(self);
-        auto& sensor = reg.get<Sensor>(self);
-
-        for (int i = 0; i < sensor.hitCount; ++i) {
-            entt::entity h = sensor.hits[i];
-            if (reg.valid(h) && reg.all_of<Tag>(h)) {
-                target.entity    = h;
-                target.position  = reg.get<Transform2D>(h).position;
-                target.hasTarget = true;
-                return;
-            }
-        }
     }
 };
 
