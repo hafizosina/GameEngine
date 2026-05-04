@@ -13,6 +13,8 @@
 #include "entities/BulletEntity.hpp"
 #include "entities/WallEntity.hpp"
 #include "renderer/Camera2D.hpp"
+#include "tilemap/TileMap.hpp"
+#include "tilemap/TilemapRenderSystem.hpp"
 #include <vector>
 
 namespace Zhenzhu {
@@ -25,6 +27,7 @@ public:
     void Render() override;
 
 private:
+    void SetupTilemap();
     void SpawnWalls();
     void SpawnEnemy();
     void SpawnBullet(Vec2 pos, Vec2 dir);
@@ -38,6 +41,8 @@ private:
     FSMSystem                       m_FSMSystem;
     ScriptSystem                    m_ScriptSystem;
     Camera2D                        m_Camera;
+    TileMap                         m_TileMap;
+    TilemapRenderSystem             m_TilemapRenderSystem;
 
     ObjectPool<Bullet>   m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;

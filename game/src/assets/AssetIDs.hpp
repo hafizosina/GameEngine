@@ -16,9 +16,13 @@ namespace Assets {
     constexpr const char* TEX_WALL               = "tex.wall";
 
     // ── Tiles ───────────────────────────────────────
-    // Dual-grid autotile sheets: 64×64, 4×4 grid of 16 variants.
-    // Variant index = bitmask: bit0=TL, bit1=TR, bit2=BL, bit3=BR (1=this terrain, 0=other).
+    // Dual-grid autotile sheets: 128×128, 4×4 grid of 32px variants.
+    // Bitmask bits: TL=1, TR=2, BL=4, BR=8
+    constexpr const char* TEX_TILE_DIRT          = "tex.tile.dirt";
     constexpr const char* TEX_TILE_GRASS         = "tex.tile.grass";
+    constexpr const char* TEX_TILE_SAND          = "tex.tile.sand";
+    constexpr const char* TEX_TILE_WATER         = "tex.tile.water";
+    constexpr const char* TEX_TILE_STONE         = "tex.tile.stone";
 
     // ── SFX ─────────────────────────────────────────
     constexpr const char* SFX_UI_HOVER            = "sfx.ui.hover";

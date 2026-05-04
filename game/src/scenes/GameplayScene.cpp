@@ -8,6 +8,8 @@
 #include "utils/Logger.hpp"
 #include "utils/Math2D.hpp"
 #include "ecs/components/Health.hpp"
+#include "tilemap/DualGridAutotiler.hpp"
+#include "assets/AssetIDs.hpp"
 #include <random>
 #include <cmath>
 
@@ -25,6 +27,7 @@ void GameplayScene::OnEnter()
 
     m_Player = CreatePlayer(m_Registry, rm);
     m_BulletPool.PreWarm(poolSize);
+    SetupTilemap();
     SpawnWalls();
 
     auto* renderer = ServiceLocator::Get<Renderer2D>();
@@ -97,14 +100,22 @@ void GameplayScene::Update(float dt)
 void GameplayScene::Render()
 {
     auto* renderer = ServiceLocator::Get<Renderer2D>();
+    int   gameW    = renderer->GetGameWidth();
+    int   gameH    = renderer->GetGameHeight();
 
     BeginMode2D(m_Camera.GetRaylibCamera());
+        // Background layers (zOrder 0-49) — below entities
+        m_TilemapRenderSystem.RenderLayers(m_TileMap, m_Camera, *renderer, gameW, gameH, 0, 49);
+
         m_RenderSystem.Render(m_Registry, *renderer);
 #ifdef ENGINE_DEBUG
         auto* dm = ServiceLocator::Get<DataManager>();
         if (dm->settings.debug.drawCollisions)
             DebugDraw2D::DrawColliders(*renderer, m_Registry);
 #endif
+
+        // Overhead layers (zOrder 50-99) — above entities
+        m_TilemapRenderSystem.RenderLayers(m_TileMap, m_Camera, *renderer, gameW, gameH, 50, 99);
     EndMode2D();
 
     // HUD — screen space, drawn after EndMode2D
@@ -170,6 +181,59 @@ void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
 {
     auto* rm = ServiceLocator::Get<ResourceManager>();
     CreateBullet(m_Registry, rm, m_BulletPool, m_ActiveBullets, pos, dir);
+}
+
+void GameplayScene::SetupTilemap()
+{
+    auto* rm = ServiceLocator::Get<ResourceManager>();
+    m_TileMap.tileSize = 32;
+
+    // Register terrain types
+    TerrainInfo dirtInfo;
+    dirtInfo.passable  = true;
+    dirtInfo.priority  = 0;
+    dirtInfo.tileset   = rm->LoadTexture(Assets::TEX_TILE_DIRT);
+    m_TileMap.terrainRegistry[1] = dirtInfo;
+
+    TerrainInfo grassInfo;
+    grassInfo.passable = true;
+    grassInfo.priority = 1;
+    grassInfo.tileset  = rm->LoadTexture(Assets::TEX_TILE_GRASS);
+    m_TileMap.terrainRegistry[2] = grassInfo;
+
+    TerrainInfo waterInfo;
+    waterInfo.passable = false;
+    waterInfo.priority = 2;
+    waterInfo.tileset  = rm->LoadTexture(Assets::TEX_TILE_WATER);
+    m_TileMap.terrainRegistry[3] = waterInfo;
+
+    // Ground layer — autotiled, zOrder 0 (renders below entities)
+    m_TileMap.layers.emplace_back();
+    TileLayer& ground  = m_TileMap.layers.back();
+    ground.name        = "ground";
+    ground.zOrder      = 0;
+    ground.walkable    = true;
+    ground.autotiled   = true;
+
+    // Fill a 64×48 area with Dirt (origin at tile 0,0 = world 0,0)
+    for (int y = 0; y < 48; ++y)
+        for (int x = 0; x < 64; ++x)
+            SetTerrain(ground, x, y, 1);
+
+    // Paint a large Grass region in the centre
+    for (int y = 4; y < 36; ++y)
+        for (int x = 4; x < 48; ++x)
+            SetTerrain(ground, x, y, 2);
+
+    // Paint a Water pond
+    for (int y = 14; y < 22; ++y)
+        for (int x = 22; x < 30; ++x)
+            SetTerrain(ground, x, y, 3);
+
+    // Bake the full area (DualGridAutotiler expands by 1 internally)
+    DualGridAutotiler::Bake(ground, m_TileMap.terrainRegistry, {0, 0, 64, 48});
+
+    LOG_INFO("Tilemap ground layer baked");
 }
 
 } // namespace Zhenzhu
