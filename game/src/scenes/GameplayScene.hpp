@@ -8,6 +8,7 @@
 #include "ecs/systems/ScriptSystem.hpp"
 #include "ecs/systems/SensorSystem.hpp"
 #include "ecs/systems/SolidCollisionSystem.hpp"
+#include "ecs/systems/TimerSystem.hpp"
 #include "entities/PlayerEntity.hpp"
 #include "entities/EnemyEntity.hpp"
 #include "entities/BulletEntity.hpp"
@@ -40,6 +41,7 @@ private:
     DamageOnContactSystem           m_DamageSystem;
     FSMSystem                       m_FSMSystem;
     ScriptSystem                    m_ScriptSystem;
+    TimerSystem                     m_TimerSystem;
     Camera2D                        m_Camera;
     TileMap                         m_TileMap;
     TilemapRenderSystem             m_TilemapRenderSystem;

@@ -8,6 +8,7 @@
 #include "ecs/components/DealsDamage.hpp"
 #include "ecs/components/Tags.hpp"
 #include "ecs/components/SolidObject.hpp"
+#include "ecs/components/TimerComponent.hpp"
 #include "resources/ResourceManager.hpp"
 #include "data/DataManager.hpp"
 #include "core/ServiceLocator.hpp"
@@ -19,10 +20,7 @@
 
 namespace Zhenzhu {
 
-struct BulletData {
-    float lifetime = 1.5f;
-    float timer    = 0.f;
-};
+// BulletData removed in favor of engine/ecs/components/TimerComponent.hpp
 
 class Bullet : public Poolable {
 public:
@@ -46,19 +44,30 @@ inline Bullet* CreateBullet(Registry& reg, ResourceManager* rm,
 
     reg.Emplace<Transform2D>(obj->entity, pos);
     reg.Emplace<Velocity2D>(obj->entity, dir * speed);
-    reg.Emplace<BulletData>(obj->entity, BulletData{lifetime, 0.f});
     reg.Emplace<IsBullet>(obj->entity);
     reg.Emplace<IsTrigger>(obj->entity);
     reg.Emplace<DealsDamage>(obj->entity, DealsDamage{damage});
 
-    Health& hp = reg.Emplace<Health>(obj->entity, Health{1, 1, {}});
-    hp.onDied  = [&pool, &activeBullets, obj](entt::entity e, Registry& r) {
-        activeBullets.erase(
-            std::remove(activeBullets.begin(), activeBullets.end(), obj),
-            activeBullets.end()
-        );
+    // Handle bullet destruction and pooling
+    auto releaseBullet = [&pool, &activeBullets, obj](entt::registry& r, entt::entity e) {
+        // Find and remove from active list
+        auto it = std::find(activeBullets.begin(), activeBullets.end(), obj);
+        if (it != activeBullets.end()) {
+            activeBullets.erase(it);
+        }
+        
         pool.Release(obj);
-        r.Destroy(e);
+        if (r.valid(e)) r.destroy(e);
+    };
+
+    reg.Emplace<TimerComponent>(obj->entity, TimerComponent{
+        .timeLeft = lifetime,
+        .onTimeout = releaseBullet
+    });
+
+    Health& hp = reg.Emplace<Health>(obj->entity, Health{1, 1, {}});
+    hp.onDied  = [releaseBullet](entt::entity e, Registry& r) {
+        releaseBullet(r.Raw(), e);
     };
 
     Sprite& spr = reg.Emplace<Sprite>(obj->entity, rm->LoadTexture(Assets::TEX_BULLET));
