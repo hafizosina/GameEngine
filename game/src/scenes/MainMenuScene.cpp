@@ -38,7 +38,7 @@ void MainMenuScene::OnEnter()
     panel->borderColor = {100, 100, 120, 255};
 
     // Title
-    auto title = std::make_unique<UILabel>("COIN COLLECTOR");
+    auto title = std::make_unique<UILabel>("GRIM WORLD");
     title->anchor = Anchor::TopLeft;  // Required for flex layout
     title->fontSize = ui->GetTheme().FontSizeTitle();
     title->color = ui->GetTheme().Primary();
@@ -61,11 +61,10 @@ void MainMenuScene::OnEnter()
         return btn;
     };
 
-    panel->AddChild(createBtn("NEW WORLD", []() {
-        LOG_INFO("New World clicked! (Reserved for tilemap experimentation)");
-    }));
-    panel->AddChild(createBtn("LOAD WORLD", []() { 
-        LOG_INFO("Loading last world..."); 
+    panel->AddChild(
+        createBtn("NEW WORLD", []() { LOG_INFO("New World clicked! (Reserved for tilemap experimentation)"); }));
+    panel->AddChild(createBtn("LOAD WORLD", []() {
+        LOG_INFO("Loading last world...");
         auto* sm = ServiceLocator::Get<SceneManager>();
         sm->Switch(std::make_unique<GameplayScene>(), std::make_unique<FadeTransition>(1.0f));
     }));

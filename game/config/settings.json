@@ -20,6 +20,6 @@
         "showFPS": false
     },
     "debug": {
-        "drawCollisions": true
+        "drawCollisions": false
     }
 }
