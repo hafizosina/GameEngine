@@ -102,11 +102,14 @@ public:
         return false;
     }
 
-    // ── Separate ──────────────────────────────────────────────────────
-    // Steers away from everything in the entity's Sensor hits.
-    // radius   — only hits closer than this contribute; match sensor size.
+    // ── Separate<Tags...> ────────────────────────────────────────────
+    // Steers away from Sensor hits that carry ANY of the listed tags.
+    // e.g. Separate<IsEnemy, IsWall> pushes away from other enemies and
+    // walls, leaving the player (seek target) unaffected.
+    // Weighted by 1/dist so closer neighbours push harder.
     // strength — nudge magnitude. Keep below seek speed for a gentle bias.
-    static void Separate(entt::registry& reg, Entity self, float radius, float strength) {
+    template<typename... Tags>
+    static void Separate(entt::registry& reg, Entity self, float strength) {
         if (!reg.all_of<Transform2D, Velocity2D, Sensor>(self)) return;
 
         auto& trans  = reg.get<Transform2D>(self);
@@ -119,12 +122,13 @@ public:
         for (int i = 0; i < sensor.hitCount; ++i) {
             entt::entity other = sensor.hits[i];
             if (!reg.valid(other) || !reg.all_of<Transform2D>(other)) continue;
+            if (!reg.any_of<Tags...>(other)) continue; // only named tags
 
             float dist = Math2D::Distance(trans.position,
                                           reg.get<Transform2D>(other).position);
-            if (dist > 0.f && dist < radius) {
+            if (dist > 0.f) {
                 Vec2 away = (trans.position - reg.get<Transform2D>(other).position).Normalize();
-                steer = steer + away * (radius - dist);
+                steer = steer + away * (1.f / dist);
                 ++count;
             }
         }

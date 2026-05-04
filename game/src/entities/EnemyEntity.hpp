@@ -57,7 +57,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         [](entt::registry& r, Entity self, float dt) {
             float spd = r.get<EnemyAI>(self).walkSpeed;
             AIBehaviors::Wander(r, self, dt, spd);
-            AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
+            AIBehaviors::Separate<IsEnemy, IsWall>(r, self, 50.f);
         },
         nullptr
     });
@@ -69,7 +69,7 @@ inline Entity CreateEnemy(Registry& reg, ResourceManager* rm, Vec2 pos)
         [](entt::registry& r, Entity self, float dt) {
             float spd = r.get<EnemyAI>(self).runSpeed;
             AIBehaviors::SeekFirst<IsPlayer>(r, self, dt, spd, 5.f);
-            AIBehaviors::Separate(r, self, r.get<Sensor>(self).size.x, 40.f);
+            AIBehaviors::Separate<IsEnemy, IsWall>(r, self, 50.f);
         },
         nullptr
     });
