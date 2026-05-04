@@ -8,10 +8,8 @@ class ScriptSystem {
 public:
     void Update(Registry& reg, float dt) {
         auto view = reg.View<Script>();
-        for (auto [entity, script] : view.each()) {
-            if (script.update)
-                script.update(reg.Raw(), entity, dt);
-        }
+        for (auto [entity, script] : view.each())
+            if (script.update) script.update(reg.Raw(), entity, dt);
     }
 };
 

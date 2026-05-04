@@ -8,6 +8,8 @@
 #include "ecs/components/DealsDamage.hpp"
 #include "ecs/components/Tags.hpp"
 #include "ecs/components/SolidObject.hpp"
+#include "ecs/components/Script.hpp"
+#include "input/InputManager.hpp"
 #include "resources/ResourceManager.hpp"
 #include "data/DataManager.hpp"
 #include "core/ServiceLocator.hpp"
@@ -18,6 +20,20 @@ namespace Zhenzhu {
 
 struct PlayerController {
     float speed = 250.f;
+};
+
+// Scene writes aimWorld each frame (camera-converted mouse position).
+// Script reads it to compute shoot direction.
+struct AimPosition {
+    Vec2 world = {};
+};
+
+// Script sets fire=true + origin/dir when shoot button pressed.
+// Scene reads it each frame to spawn the bullet, then clears fire.
+struct ShootIntent {
+    bool fire      = false;
+    Vec2 origin    = {};
+    Vec2 direction = {};
 };
 
 inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
@@ -34,6 +50,8 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
     reg.Emplace<IsTrigger>(e);
     reg.Emplace<IsPlayer>(e);
     reg.Emplace<DealsDamage>(e, DealsDamage{damage});
+    reg.Emplace<AimPosition>(e);
+    reg.Emplace<ShootIntent>(e);
 
     Health& hp = reg.Emplace<Health>(e, Health{health, health, {}});
     hp.onDied = [health](entt::entity ent, Registry& r) {
@@ -49,6 +67,32 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
         .size  = {24, 24},
     });
     reg.Emplace<SolidObject>(e);
+
+    reg.Emplace<Script>(e, Script{[](entt::registry& r, Entity self, float /*dt*/) {
+        auto* input = ServiceLocator::Get<InputManager>();
+        auto& vel   = r.get<Velocity2D>(self);
+        auto& ctrl  = r.get<PlayerController>(self);
+
+        // Movement
+        vel.linear = {0, 0};
+        if (input->GetAction("move_up")->IsDown())    vel.linear.y -= ctrl.speed;
+        if (input->GetAction("move_down")->IsDown())  vel.linear.y += ctrl.speed;
+        if (input->GetAction("move_left")->IsDown())  vel.linear.x -= ctrl.speed;
+        if (input->GetAction("move_right")->IsDown()) vel.linear.x += ctrl.speed;
+
+        // Shooting — write intent, scene handles spawning
+        auto& intent = r.get<ShootIntent>(self);
+        intent.fire  = false;
+        if (input->GetMouse().IsButtonPressed(MOUSE_BUTTON_LEFT) ||
+            input->GetAction("jump")->IsPressed()) {
+            auto& trans    = r.get<Transform2D>(self);
+            auto& aim      = r.get<AimPosition>(self);
+            Vec2  dir      = (aim.world - trans.position).Normalize();
+            intent.fire      = true;
+            intent.origin    = trans.position + dir * 36.f;
+            intent.direction = dir;
+        }
+    }});
 
     return e;
 }

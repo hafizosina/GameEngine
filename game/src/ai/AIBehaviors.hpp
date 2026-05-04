@@ -86,22 +86,6 @@ public:
         return false;
     }
 
-    // ── WithinRange<Tag> ──────────────────────────────────────────────
-    // FSM condition: true when the first Tag hit in Sensor is within arrivalRadius.
-    template<typename Tag>
-    static bool WithinRange(entt::registry& reg, Entity self, float arrivalRadius) {
-        if (!reg.all_of<Transform2D, Sensor>(self)) return false;
-        auto& trans  = reg.get<Transform2D>(self);
-        auto& sensor = reg.get<Sensor>(self);
-        for (int i = 0; i < sensor.hitCount; ++i) {
-            entt::entity h = sensor.hits[i];
-            if (reg.valid(h) && reg.all_of<Tag, Transform2D>(h))
-                return Math2D::Distance(trans.position,
-                                        reg.get<Transform2D>(h).position) <= arrivalRadius;
-        }
-        return false;
-    }
-
     // ── Separate<Tags...> ────────────────────────────────────────────
     // Steers away from Sensor hits that carry ANY of the listed tags.
     // e.g. Separate<IsEnemy, IsWall> pushes away from other enemies and

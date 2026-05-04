@@ -26,6 +26,12 @@ void GameplayScene::OnEnter()
     m_Player = CreatePlayer(m_Registry, rm);
     m_BulletPool.PreWarm(poolSize);
     SpawnWalls();
+
+    auto* renderer = ServiceLocator::Get<Renderer2D>();
+    float hw = renderer->GetGameWidth()  * 0.5f;
+    float hh = renderer->GetGameHeight() * 0.5f;
+    auto& pTrans = m_Registry.Get<Transform2D>(m_Player);
+    m_Camera.Init(pTrans.position, {hw, hh}, 1.f);
 }
 
 void GameplayScene::OnExit()
@@ -36,31 +42,20 @@ void GameplayScene::OnExit()
 
 void GameplayScene::Update(float dt)
 {
-    auto* input = ServiceLocator::Get<InputManager>();
-
-    // 1. Player Movement
-    auto& pTrans = m_Registry.Get<Transform2D>(m_Player);
-    auto& pCtrl  = m_Registry.Get<PlayerController>(m_Player);
-    auto& pVel   = m_Registry.Get<Velocity2D>(m_Player);
-
-    pVel.linear = {0, 0};
-    if (input->GetAction("move_up")->IsDown())    pVel.linear.y -= pCtrl.speed;
-    if (input->GetAction("move_down")->IsDown())  pVel.linear.y += pCtrl.speed;
-    if (input->GetAction("move_left")->IsDown())  pVel.linear.x -= pCtrl.speed;
-    if (input->GetAction("move_right")->IsDown()) pVel.linear.x += pCtrl.speed;
-
-    // 2. Player Shooting
-    bool shooting = input->GetMouse().IsButtonPressed(MOUSE_BUTTON_LEFT) ||
-                    input->GetAction("jump")->IsPressed();
-
-    if (shooting) {
+    // 0. Camera + player aim
+    if (m_Registry.IsValid(m_Player)) {
         auto* renderer = ServiceLocator::Get<Renderer2D>();
-        Vec2 mousePos  = input->GetMouse().GetPosition() - renderer->GetViewportOffset();
-        Vec2 dir       = (mousePos - pTrans.position).Normalize();
-        SpawnBullet(pTrans.position + dir * 36.f, dir);
-    }
+        auto* input    = ServiceLocator::Get<InputManager>();
 
-    // 3. Enemy Spawning
+        auto& pTrans = m_Registry.Get<Transform2D>(m_Player);
+        m_Camera.Follow(pTrans.position, 6.f, dt);
+
+        Vec2 screenPos = input->GetMouse().GetPosition() - renderer->GetViewportOffset();
+        m_Registry.Get<AimPosition>(m_Player).world = m_Camera.ScreenToWorld(screenPos);
+    }
+    m_Camera.Update(dt);
+
+    // 1. Enemy Spawning
     m_EnemySpawnTimer += dt;
     if (m_EnemySpawnTimer > m_EnemySpawnInterval && (int)m_Registry.View<EnemyAI>().size() < m_MaxEnemies) {
         SpawnEnemy();
@@ -83,25 +78,36 @@ void GameplayScene::Update(float dt)
     }
 
     // 5. Systems
+    m_ScriptSystem.Update(m_Registry, dt);   // player input → velocity
     m_SensorSystem.Update(m_Registry);       // populate sensor hits first
     m_FSMSystem.Update(m_Registry, dt);      // AI reads sensor, decides velocity
     m_MovementSystem.Update(m_Registry, dt);
     m_SolidCollision.Update(m_Registry);     // resolve all solid-vs-solid overlaps
     m_CollisionSystem.Update(m_Registry);
     m_DamageSystem.Update(m_Registry);
+
+    // Spawn bullet if player script requested it
+    if (m_Registry.IsValid(m_Player)) {
+        auto& intent = m_Registry.Get<ShootIntent>(m_Player);
+        if (intent.fire)
+            SpawnBullet(intent.origin, intent.direction);
+    }
 }
 
 void GameplayScene::Render()
 {
     auto* renderer = ServiceLocator::Get<Renderer2D>();
-    m_RenderSystem.Render(m_Registry, *renderer);
 
+    BeginMode2D(m_Camera.GetRaylibCamera());
+        m_RenderSystem.Render(m_Registry, *renderer);
 #ifdef ENGINE_DEBUG
-    auto* dm = ServiceLocator::Get<DataManager>();
-    if (dm->settings.debug.drawCollisions)
-        DebugDraw2D::DrawColliders(*renderer, m_Registry);
+        auto* dm = ServiceLocator::Get<DataManager>();
+        if (dm->settings.debug.drawCollisions)
+            DebugDraw2D::DrawColliders(*renderer, m_Registry);
 #endif
+    EndMode2D();
 
+    // HUD — screen space, drawn after EndMode2D
     int hp = m_Registry.IsValid(m_Player) ? m_Registry.Get<Health>(m_Player).current : 0;
     renderer->DrawTextSimple("HEALTH: " + std::to_string(hp), {20.f, 20.f}, 20, {255, 255, 255, 255});
 }

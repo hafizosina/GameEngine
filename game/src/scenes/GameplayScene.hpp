@@ -5,12 +5,14 @@
 #include "ecs/systems/CollisionSystem2D.hpp"
 #include "ecs/systems/DamageOnContactSystem.hpp"
 #include "ecs/systems/FSMSystem.hpp"
+#include "ecs/systems/ScriptSystem.hpp"
 #include "ecs/systems/SensorSystem.hpp"
 #include "ecs/systems/SolidCollisionSystem.hpp"
 #include "entities/PlayerEntity.hpp"
 #include "entities/EnemyEntity.hpp"
 #include "entities/BulletEntity.hpp"
 #include "entities/WallEntity.hpp"
+#include "renderer/Camera2D.hpp"
 #include <vector>
 
 namespace Zhenzhu {
@@ -34,6 +36,8 @@ private:
     CollisionSystem2D               m_CollisionSystem;
     DamageOnContactSystem           m_DamageSystem;
     FSMSystem                       m_FSMSystem;
+    ScriptSystem                    m_ScriptSystem;
+    Camera2D                        m_Camera;
 
     ObjectPool<Bullet>   m_BulletPool;
     std::vector<Bullet*> m_ActiveBullets;
