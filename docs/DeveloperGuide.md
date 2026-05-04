@@ -1,7 +1,7 @@
 # Zhenzhu Engine — Developer Guide
 
-> **Last synced**: commit `4b6b03e` — *refactor: remove unused window header and clean up formatting in MainMenuScene*  
-> To re-sync: `git log 4b6b03e..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `21a30eb` — *feat: replace single enemy speed with distinct walk and run speeds in config and entity logic*  
+> To re-sync: `git log 21a30eb..HEAD --oneline` shows what changed since this doc was written.
 
 **Engine version**: Phase 8 (complete)  
 **Language**: C++20 · **Build**: SCons · **Namespace**: `Zhenzhu`
@@ -27,10 +27,11 @@ in `engine/` is read-only.
 11. [Audio](#11-audio)
 12. [UI System](#12-ui-system)
 13. [Physics](#13-physics)
-14. [Events](#14-events)
-15. [Async & Object Pooling](#15-async--object-pooling)
-16. [Debug Tools](#16-debug-tools)
-17. [Rules Cheat Sheet](#17-rules-cheat-sheet)
+14. [Solid Collision & Sensors](#14-solid-collision--sensors)
+15. [Events](#15-events)
+16. [Async & Object Pooling](#16-async--object-pooling)
+17. [Debug Tools](#17-debug-tools)
+18. [Rules Cheat Sheet](#18-rules-cheat-sheet)
 
 ---
 
@@ -370,6 +371,8 @@ m_Registry.Emplace<IsPlayer>(e);                  // tag — no data
 | `Health` | `current`, `max`, `onDied` | `onDied` = null → auto-destroy; set → custom cleanup (pool return etc.) |
 | `DealsDamage` | `amount` | Pair with `IsTrigger` + `Contacts`; processed by DamageOnContactSystem |
 | `Contacts` | `entities[16]`, `count` | Written by CollisionSystem2D each frame — poll instead of EventBus |
+| `SolidObject` | `layer` (uint32), `mask` (uint32) | Marks entity as solid; `CollidesWith(other)` checks layer/mask compatibility. Layer bits: 0x01=world, 0x02=player, 0x04=enemy, 0x08=projectile |
+| `Sensor` | `shape`, `size`, `offset`, `hits[32]`, `hitCount` | Proximity sensor; populated by SensorSystem each frame. Query hits in AI to find players/enemies in range |
 | `Target` | `entity`, `position`, `hasTarget`, `radius` | AI targeting — tracks another entity or a world position |
 | `Sprite` | `texture` (Texture2D), `tint`, `srcRect`, `origin`, `layer` | Drawn by RenderSystem2D |
 | `Animator` | `frames`, `fps`, `currentFrame`, `timer` | Driven by AnimationSystem |
@@ -384,10 +387,11 @@ m_Registry.Emplace<IsPlayer>(e);                  // tag — no data
 ### Tag components (empty structs — no data)
 
 ```cpp
-IsPlayer, IsEnemy, IsDead, IsGrounded, IsTrigger, IsStatic, IsBullet, IsParticle
+IsPlayer, IsEnemy, IsWall, IsDead, IsGrounded, IsTrigger, IsStatic, IsBullet, IsParticle
 ```
 
-Attach `IsTrigger` to any entity that should have its overlaps tracked in `Contacts`.
+Attach `IsTrigger` to any entity that should have its overlaps tracked in `Contacts`.  
+Attach `IsWall` to static terrain tiles for use with `WallCollisionSystem<IsWall>`.
 
 ### Querying components in a system
 
@@ -461,18 +465,24 @@ inline Entity CreateCoin(Registry& reg, ResourceManager& rm, Vec2 pos) {
 #include "ecs/systems/HealthSystem.hpp"
 #include "ecs/systems/ScriptSystem.hpp"
 #include "ecs/systems/CollisionSystem2D.hpp"
+#include "ecs/systems/SolidCollisionSystem.hpp"
+#include "ecs/systems/WallCollisionSystem.hpp"
+#include "ecs/systems/SensorSystem.hpp"
 #include "ecs/systems/DamageOnContactSystem.hpp"
 #include "ecs/systems/FSMSystem.hpp"
 #include "ecs/systems/GOAPSystem.hpp"
 #include "ecs/systems/UtilityAISystem.hpp"
 
 // Recommended Update order:
-m_CollisionSys.Update(m_Registry);      // 1. populate Contacts
-m_FSMSys.Update(m_Registry, dt);        // 2. AI decides velocity
+m_SensorSys.Update(m_Registry);         // 1. populate Sensor::hits (AI reads this)
+m_FSMSys.Update(m_Registry, dt);        // 2. AI reads sensors, sets Velocity2D
 m_GOAPSys.Update(m_Registry, dt);       //    (use FSM or GOAP or UtilityAI, not all three)
 m_UtilSys.Update(m_Registry, dt);
-m_MoveSys.Update(m_Registry, dt);       // 3. apply velocity
-m_DamageSys.Update(m_Registry);         // 4. resolve damage (after contacts are populated)
+m_MoveSys.Update(m_Registry, dt);       // 3. apply velocity → advance positions
+m_SolidSys.Update(m_Registry);          // 4. push solid entities out of each other
+m_WallSys.Update(m_Registry);           //    (or use WallCollisionSystem<IsWall> instead)
+m_CollisionSys.Update(m_Registry);      // 5. populate Contacts for IsTrigger entities
+m_DamageSys.Update(m_Registry);         // 6. apply DealsDamage via Contacts
 m_AnimSys.Update(m_Registry, dt);
 m_HealthSys.Update(m_Registry);
 m_ScriptSys.Update(m_Registry, dt);
@@ -641,17 +651,27 @@ All methods are `static`. Pass them directly into FSM `onUpdate` / GOAP `onUpdat
 // Move toward Target component at speed px/s
 AIBehaviors::SeekTarget(reg, entity, dt, speed);
 
+// Wander: pick a random direction, change it every ~2 seconds (uses WanderBehavior component)
+AIBehaviors::Wander(reg, entity, dt, speed);
+
 // Returns true if entity is within its Target.radius
 AIBehaviors::WithinTargetRange(reg, entity, dt);
 
-// Set Target to nearest entity with given tag
+// Returns true if any Sensor hit has the given tag (FSM condition)
+AIBehaviors::TagInSensor<IsPlayer>(reg, entity, dt);
+
+// Set Target to the first Sensor hit that has the given tag
+AIBehaviors::FindInSensor<IsPlayer>(reg, entity);
+
+// Set Target to nearest entity with given tag (full registry scan — O(n))
 AIBehaviors::FindNearest<IsPlayer>(reg, entity);
 
 // Steer away from same-tag neighbours within radius, weighted by distance
 AIBehaviors::Separate<IsEnemy>(reg, entity, /*radius*/ 60.f, /*strength*/ 80.f);
 ```
 
-> `Separate` is O(n²) — fine up to a few hundred entities. For large crowds, use a spatial grid.
+> `Separate` uses Sensor hits when available, otherwise falls back to O(n²) scan.  
+> `FindNearest` is always O(n) — prefer `FindInSensor` when the entity has a Sensor component.
 
 ---
 
@@ -980,7 +1000,80 @@ EventBus::Subscribe<CollisionEvent>([](const CollisionEvent& e) {
 
 ---
 
-## 14. Events
+## 14. Solid Collision & Sensors
+
+### SolidObject — layer-based solid bodies (no Box2D required)
+
+Use `SolidObject` + `Collider2D` for entities that block movement. Unlike `RigidBody2D` this
+runs entirely in-engine with no Box2D overhead — ideal for walls, characters, and projectiles.
+
+```cpp
+#include "ecs/components/SolidObject.hpp"
+#include "ecs/components/Collider2D.hpp"
+
+// Player (layer=Player, collides with World+Enemy)
+m_Registry.Emplace<SolidObject>(player, SolidObject{ .layer=0x02, .mask=0x01|0x04 });
+m_Registry.Emplace<Collider2D>(player, ColliderShape::Circle, Vec2{24.f, 24.f});
+m_Registry.Emplace<Velocity2D>(player);   // presence of Velocity2D = "dynamic"
+
+// Wall (layer=World, no Velocity2D = static)
+m_Registry.Emplace<SolidObject>(wall, SolidObject{ .layer=0x01, .mask=0x00 });
+m_Registry.Emplace<Collider2D>(wall, ColliderShape::Box, Vec2{64.f, 64.f});
+```
+
+Layer convention:
+
+| Bit | Meaning |
+|---|---|
+| `0x01` | World / terrain |
+| `0x02` | Player |
+| `0x04` | Enemy |
+| `0x08` | Projectile |
+
+`SolidCollisionSystem` runs AFTER `MovementSystem2D`. Dynamic entities (have `Velocity2D`) are
+pushed out of static ones; two dynamic entities split the overlap.
+
+### Sensor — proximity detection for AI
+
+```cpp
+#include "ecs/components/Sensor.hpp"
+#include "ecs/systems/SensorSystem.hpp"
+
+// Give an enemy a 400 px detection radius
+Sensor sensor;
+sensor.shape  = ColliderShape::Circle;
+sensor.size   = { 400.f, 400.f };   // radius for Circle
+m_Registry.Emplace<Sensor>(enemy, sensor);
+
+// In Update (before AI systems):
+m_SensorSys.Update(m_Registry);
+
+// AI/FSM reads hits to find players in range:
+const auto& s = m_Registry.Get<Sensor>(enemy);
+for (int i = 0; i < s.hitCount; ++i) {
+    auto hit = s.hits[i];
+    if (m_Registry.Has<IsPlayer>(hit)) { /* chase! */ }
+}
+```
+
+Or use the `AIBehaviors` helpers so you never write the loop manually:
+
+```cpp
+// FSM transition: enter Chase when a player enters sensor range
+fsm.AddTransition({ WANDER, CHASE,
+    AIBehaviors::TagInSensor<IsPlayer>   // FSMCondition function pointer
+});
+
+// In Chase onUpdate: set Target to the sensed player, then seek
+[](entt::registry& r, Entity e, float dt) {
+    AIBehaviors::FindInSensor<IsPlayer>(r, e);   // updates Target component
+    AIBehaviors::SeekTarget(r, e, dt, runSpeed);
+}
+```
+
+---
+
+## 15. Events
 
 The event bus decouples publishers from subscribers. `EventBus` is fully templated — any
 struct can be an event without pre-registration.
@@ -1037,7 +1130,7 @@ EventBus::Clear();
 
 ---
 
-## 15. Async & Object Pooling
+## 16. Async & Object Pooling
 
 ### Async asset loading
 
@@ -1075,7 +1168,7 @@ Objects in a pool must inherit from `Poolable` and implement `Reset()` and `OnRe
 
 ---
 
-## 16. Debug Tools
+## 17. Debug Tools
 
 Debug tools are only active in debug builds (`scons`). They compile to no-ops in release
 (`scons debug=0`), so you can leave them in scene code freely.
@@ -1118,7 +1211,7 @@ DebugDraw2D::DrawFPS(*renderer);                           // FPS counter
 
 ---
 
-## 17. Rules Cheat Sheet
+## 18. Rules Cheat Sheet
 
 | Rule | Do this | Not this |
 |---|---|---|
@@ -1140,13 +1233,15 @@ DebugDraw2D::DrawFPS(*renderer);                           // FPS counter
 | Task | Section |
 |---|---|
 | Spawn an enemy | [§7 Factories](#factories--preferred-pattern-for-spawning) |
-| React to player death | [§14 Events](#14-events) |
+| React to player death | [§15 Events](#15-events) |
 | Add a pause menu | [§6 Scenes & Transitions](#6-scenes--transitions) |
 | Show HP in the HUD | [§12 UICanvas subclass](#uicanvas-subclass-for-custom-huds) |
 | Read a config value at runtime | [§5 Config & Data](#5-config--data) |
 | Play a sound on hit | [§11 Audio](#11-audio) |
 | Make the camera shake | [§10 Rendering & Camera](#10-rendering--camera) |
 | Auto-destroy a bullet after 2 s | [§7 Script component](#script-component--per-entity-behaviour) |
-| Load a texture without blocking | [§15 Async & Object Pooling](#15-async--object-pooling) |
-| Draw a debug collider overlay | [§16 Debug Tools](#16-debug-tools) |
+| Load a texture without blocking | [§16 Async & Object Pooling](#16-async--object-pooling) |
+| Draw a debug collider overlay | [§17 Debug Tools](#17-debug-tools) |
 | Complex AI behavior | [§8 FSM](#8-fsm-finite-state-machine) |
+| Add walls that block movement | [§14 Solid Collision & Sensors](#14-solid-collision--sensors) |
+| AI enemy detects player in range | [§14 Sensors](#sensor--proximity-detection-for-ai) |

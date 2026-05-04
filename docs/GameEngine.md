@@ -1,7 +1,7 @@
 # Complete Game Engine — Full Picture
 
-> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
-> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `21a30eb` — *feat: replace single enemy speed with distinct walk and run speeds in config and entity logic*  
+> To re-sync: `git log 21a30eb..HEAD --oneline` shows what changed since this doc was written.
 
 ---
 
@@ -188,24 +188,50 @@ ecs/
 ├── components/          ← pure data structs, zero logic
 │   ├── Transform2D      ← x, y, rotation, scale
 │   ├── Velocity2D       ← dx, dy
-│   ├── Health           ← current, max
+│   ├── Health           ← current, max, onDied callback
 │   ├── Sprite           ← Texture2D ref, sourceRect, flipX, flipY
 │   ├── Animator         ← spritesheet state, currentFrame, frameTimer
-│   ├── Collider2D       ← shape (box/circle), offset, isTrigger
+│   ├── Collider2D       ← shape (box/circle), offset, isTrigger, debugColor
 │   ├── RigidBody2D      ← dynamic/static/kinematic, mass, friction
 │   ├── AudioSource      ← Sound ref, volume, autoplay
 │   ├── Script           ← custom behavior function attached to entity
-│   └── Tags             ← IsPlayer, IsEnemy, IsDead, IsGrounded (empty structs)
+│   ├── Tags             ← IsPlayer, IsEnemy, IsWall, IsDead, IsGrounded, IsTrigger,
+│   │                       IsStatic, IsBullet, IsParticle (empty structs)
+│   ├── DealsDamage      ← amount; pair with IsTrigger + Contacts
+│   ├── Contacts         ← entities[16], count; written each frame by CollisionSystem2D
+│   ├── SolidObject      ← layer + mask bitmask for solid collision layers
+│   ├── Sensor           ← shape/size/offset + hits[32]/hitCount; proximity detection
+│   ├── Target           ← entity ref or world position; used by AI behaviors
+│   ├── FiniteStateMachine ← states[], transitions[], currentState; driven by FSMSystem
+│   ├── GOAPAgent        ← goals[], actions[], activeGoal/Action; driven by GOAPSystem
+│   └── UtilityAIAgent   ← scored actions[], hysteresis, reselectCooldown
 │
 └── systems/             ← pure logic, iterate component views
-    ├── MovementSystem2D     ← applies Velocity2D to Transform2D
-    ├── CollisionSystem2D    ← detects + resolves Collider2D overlaps
-    ├── PhysicsSystem2D      ← syncs Transform2D ↔ Box2D body
-    ├── AnimationSystem      ← advances Animator frames
-    ├── RenderSystem2D       ← draws Sprite at Transform2D position
-    ├── HealthSystem         ← checks hp ≤ 0 → destroys entity
-    ├── AISystem             ← runs enemy behavior logic
-    └── ScriptSystem         ← calls Script component update fn
+    ├── MovementSystem2D         ← applies Velocity2D to Transform2D
+    ├── CollisionSystem2D        ← populates Contacts for IsTrigger entities (polling)
+    ├── SolidCollisionSystem     ← resolves penetration between SolidObject entities
+    │                               dynamic vs static → push dynamic out fully
+    │                               dynamic vs dynamic → push each out half, adjust vel
+    ├── WallCollisionSystem<Tag> ← resolves movers against wall entities tagged with Tag
+    ├── SensorSystem             ← populates Sensor::hits each frame (SolidObject overlap)
+    ├── PhysicsSystem2D          ← syncs Transform2D ↔ Box2D body
+    ├── AnimationSystem          ← advances Animator frames
+    ├── RenderSystem2D           ← draws Sprite at Transform2D position
+    ├── HealthSystem             ← checks hp ≤ 0 → calls onDied or destroys entity
+    ├── DamageOnContactSystem    ← DealsDamage + Contacts → apply damage each frame
+    ├── FSMSystem                ← evaluates FSM transitions, calls onEnter/Update/onExit
+    ├── GOAPSystem               ← greedy planner: highest-priority goal, cheapest action
+    ├── UtilityAISystem          ← scores all actions/frame, switches on hysteresis
+    └── ScriptSystem             ← calls Script component update fn
+
+AIBehaviors (static helpers — use in any AI system's onUpdate/condition)
+    ├── SeekTarget(reg, e, dt, speed)       ← move toward Target position
+    ├── Wander(reg, e, dt, speed)           ← random direction, changes every ~2s
+    ├── WithinTargetRange(reg, e)           ← true if distance ≤ Target.radius
+    ├── TagInSensor<Tag>(reg, e)            ← true if any Sensor hit has the tag
+    ├── FindInSensor<Tag>(reg, e)           ← set Target to first hit with the tag
+    ├── FindNearest<Tag>(reg, e)            ← set Target to nearest entity with tag
+    └── Separate<Tag>(reg, e, radius, str) ← steer away from same-tag neighbours
 ```
 
 ---
@@ -685,15 +711,30 @@ zhenzhu-engine/
 │   │   │   ├── RigidBody2D.hpp
 │   │   │   ├── AudioSource.hpp
 │   │   │   ├── Script.hpp
-│   │   │   └── Tags.hpp
+│   │   │   ├── Tags.hpp
+│   │   │   ├── DealsDamage.hpp
+│   │   │   ├── Contacts.hpp
+│   │   │   ├── SolidObject.hpp
+│   │   │   ├── Sensor.hpp
+│   │   │   ├── Target.hpp
+│   │   │   ├── FiniteStateMachine.hpp
+│   │   │   ├── GOAPAgent.hpp
+│   │   │   ├── UtilityAIAgent.hpp
+│   │   │   └── AIBehaviors.hpp
 │   │   └── systems/
 │   │       ├── MovementSystem2D.hpp
 │   │       ├── CollisionSystem2D.hpp
+│   │       ├── SolidCollisionSystem.hpp
+│   │       ├── WallCollisionSystem.hpp
+│   │       ├── SensorSystem.hpp
+│   │       ├── DamageOnContactSystem.hpp
 │   │       ├── PhysicsSystem2D.hpp
 │   │       ├── AnimationSystem.hpp
 │   │       ├── RenderSystem2D.hpp
 │   │       ├── HealthSystem.hpp
-│   │       ├── AISystem.hpp
+│   │       ├── FSMSystem.hpp
+│   │       ├── GOAPSystem.hpp
+│   │       ├── UtilityAISystem.hpp
 │   │       └── ScriptSystem.hpp
 │   │
 │   ├── ui/
@@ -781,10 +822,15 @@ zhenzhu-engine/
 │   ├── src/                    ← game code (yours to edit)
 │   │   ├── main.cpp
 │   │   ├── assets/
-│   │   │   └── AssetIDs.hpp    ← game-owned asset ID constants
+│   │   │   └── AssetIDs.hpp    ← game-owned asset ID constants (incl. tile IDs)
 │   │   ├── dev/
-│   │   │   ├── TextureBaker.hpp/.cpp
+│   │   │   ├── TextureBaker.hpp/.cpp  ← BakeAutotileSheet: noise + jagged terrain
 │   │   │   └── SoundComposer.hpp/.cpp
+│   │   ├── entities/           ← header-only entity factories
+│   │   │   ├── PlayerEntity.hpp
+│   │   │   ├── EnemyEntity.hpp  ← reads walkSpeed / runSpeed from game_config.json
+│   │   │   ├── BulletEntity.hpp
+│   │   │   └── WallEntity.hpp
 │   │   ├── scenes/
 │   │   │   ├── SplashScene.hpp/.cpp
 │   │   │   ├── MainMenuScene.hpp/.cpp
@@ -792,13 +838,14 @@ zhenzhu-engine/
 │   │   └── ui/
 │   ├── config/                 ← JSON data files (loaded via app.Init("game"))
 │   │   ├── settings.json
-│   │   ├── assets.json         ← paths relative to game/ (prepended by AssetDB)
+│   │   ├── assets.json         ← paths relative to game/ (incl. tex.tile.* entries)
 │   │   ├── keybinds.json
 │   │   ├── ui_theme.json
-│   │   ├── game_config.json
+│   │   ├── game_config.json    ← enemies.slime: walkSpeed, runSpeed, detectionRadius
 │   │   └── scenes.json
 │   └── assets/
-│       ├── textures/           ← real textures (artist-delivered)
+│       ├── textures/
+│       │   └── tiles/          ← 16-variant autotile sheets (baked by TextureBaker)
 │       ├── sounds/
 │       ├── fonts/
 │       └── placeholder/        ← auto-baked at SplashScene
@@ -809,6 +856,80 @@ zhenzhu-engine/
     ├── spdlog/
     ├── box2d/
     └── nlohmann_json/
+```
+
+---
+
+## 18. SENSOR & SOLID COLLISION (Phase 8B)
+
+```
+Sensor (component)               ← proximity detection — NOT physics
+├── shape                        ← Circle | Box (the sensing area)
+├── size / offset                ← relative to Transform2D
+├── hits[32] / hitCount          ← populated by SensorSystem each frame
+├── Clear()
+├── Add(entity)
+└── Contains(entity) → bool
+
+SensorSystem                     ← header-only system
+└── Update(Registry&)            ← tests each Sensor vs every SolidObject;
+                                    results available this frame for AI / FSM
+
+SolidObject (component)          ← marks entity as physically solid
+├── layer   (uint32 bitmask)     ← which layer this entity EXISTS on
+└── mask    (uint32 bitmask)     ← which layers this entity BLOCKS/CHECKS
+    CollidesWith(other) → bool
+
+SolidCollisionSystem             ← resolves solid-body penetration (no Box2D)
+└── Update(Registry&)            ← called AFTER MovementSystem2D
+    Dynamic vs Static  → push dynamic entity out fully
+    Dynamic vs Dynamic → push both out by half, adjust velocities
+    Static  vs Static  → skip
+    Supports: Circle-Circle, Circle-Box, Box-Box
+
+WallCollisionSystem<WallTag>     ← template; resolves movers vs tagged walls
+└── Update(Registry&)            ← Velocity2D + Collider2D vs WallTag + Collider2D
+                                    cancels velocity component pointing into wall
+
+
+Layer bitmask convention:
+    0x01  World / terrain
+    0x02  Player
+    0x04  Enemy
+    0x08  Projectile
+```
+
+---
+
+## 19. TILEMAP (Phase 8B — asset baking complete, map system planned)
+
+```
+TextureBaker::BakeAutotileSheet(assetId, outputPath, TerrainStyle)
+    ← generates 4×4 (16-variant) autotile sheet at 64×64 px
+    ← procedural Value Noise + jagged edge transitions
+    ← per-terrain TerrainStyle{base, light, dark, transition, isLiquid}
+    ← called via AssetTracker registered baker at SplashScene
+
+Terrain types with baked sheets:
+    tex.tile.grass  →  game/assets/textures/tiles/grass_autotile.png
+    tex.tile.sand   →  game/assets/textures/tiles/sand_autotile.png
+    tex.tile.water  →  game/assets/textures/tiles/water_autotile.png
+    tex.tile.stone  →  game/assets/textures/tiles/stone_autotile.png
+    tex.tile.dirt   →  game/assets/textures/tiles/dirt_autotile.png
+
+Planned map data structures (not yet implemented in engine/):
+    TileID          ← uint16, 0 = empty
+    TileInfo        ← passability + properties per tile type
+    TileChunk       ← 32×32 grid + dirty flag for GPU sync
+    TileLayer       ← owns chunks, tileset ref, zOrder (0–99)
+    TileMap         ← scene-owned; tile coordinate API
+    DualGridAutotiler  ← 16-variant bitmask (TL=1,TR=2,BL=4,BR=8)
+
+Z-order layering plan:
+    Layers  0–49  ← background (below entities)
+    Layer   50    ← ECS entities (Y-sorted)
+    Layers 51–99  ← overhead tiles (above entities)
+    Layer  100+   ← UI / overlays
 ```
 
 ---

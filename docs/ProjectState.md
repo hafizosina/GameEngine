@@ -1,9 +1,9 @@
 # Zhenzhu Engine — Project State
 
-> **Last synced**: commit `4b6b03e` — *refactor: remove unused window header and clean up formatting in MainMenuScene*  
-> To re-sync: `git log 4b6b03e..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `21a30eb` — *feat: replace single enemy speed with distinct walk and run speeds in config and entity logic*  
+> To re-sync: `git log 21a30eb..HEAD --oneline` shows what changed since this doc was written.
 
-**Current Status**: 🟢 All Phases Complete (through Phase 8)
+**Current Status**: 🟡 Phase 8 In Progress (8A + 8B complete, 8C tilemap planned)
 **Build System**: SCons
 **Primary Language**: C++20
 
@@ -21,13 +21,40 @@
 | **Phase 5** | Scene & Audio | ✅ Complete | 100% |
 | **Phase 6** | UI System | ✅ Complete | 100% |
 | **Phase 7** | Final Polish & Build | ✅ Complete | 100% |
-| **Phase 8** | AI Framework (FSM + GOAP + Utility AI) | ✅ Complete | 100% |
+| **Phase 8A** | AI Framework (FSM + GOAP + Utility AI) | ✅ Complete | 100% |
+| **Phase 8B** | Sensor + Solid Collision Systems | ✅ Complete | 100% |
+| **Phase 8C** | Tilemap System | 🔄 In Progress | 30% |
 
 ---
 
 ## ✅ Completed Features
 
-### Phase 8: AI Framework & Engine Improvements
+### Phase 8C: Tilemap (In Progress)
+
+- [x] **TextureBaker::BakeAutotileSheet()** — generic bake function for any terrain type via `TerrainStyle{base, light, dark, transition, isLiquid}`; replaces per-terrain bake functions
+- [x] **Procedural noise texturing** — Value Noise with Perlin-like smoothing, jagged transition edges between terrain types
+- [x] **Five terrain types baked** — grass, sand, water (liquid ripples), stone, dirt; 4×4 × 16-variant autotile sheets at `game/assets/textures/tiles/`
+- [x] **Tile asset IDs** — `TEX_TILE_GRASS/SAND/WATER/STONE/DIRT` in `AssetIDs.hpp`; entries in `assets.json`
+- [ ] **TileTypes.hpp** — `TileID`, `TileInfo`, passability flags
+- [ ] **TileChunk.hpp** — 32×32 grid with dirty flag
+- [ ] **TileLayer.hpp** — chunk array, tileset ref, zOrder (0–99)
+- [ ] **TileMap.hpp** — scene-owned, tile coordinate API
+- [ ] **DualGridAutotiler.hpp** — 16-variant bitmask (TL=1,TR=2,BL=4,BR=8)
+- [ ] **TilemapRenderSystem.hpp** — draws visible chunks, respects zOrder vs entity layer (50)
+
+### Phase 8B: Sensor + Solid Collision Systems
+
+- [x] **SolidObject component** — `layer` + `mask` bitmask; marks entity as solid; `CollidesWith()` checks layer compatibility
+- [x] **SolidCollisionSystem** — penetration resolution between SolidObject entities without Box2D; dynamic vs static (full push), dynamic vs dynamic (half push each), supports Circle-Circle / Circle-Box / Box-Box
+- [x] **WallCollisionSystem\<WallTag\>** — template system; resolves movers (Velocity2D + Collider2D) against wall entities tagged with WallTag; cancels velocity component pointing into wall
+- [x] **Sensor component** — shape/size/offset defines sensing area; `hits[32]`/`hitCount` populated by SensorSystem each frame; AI queries hits by tag
+- [x] **SensorSystem** — tests each Sensor vs every SolidObject entity; Circle/Box overlap; zero allocations per frame
+- [x] **AIBehaviors extended** — new leaf functions: `Wander()` (random direction timer), `TagInSensor<Tag>()` (FSM condition), `FindInSensor<Tag>()` (set Target to first sensor hit with tag)
+- [x] **Enemy walk/run speeds** — `game_config.json: enemies.slime.walkSpeed / runSpeed`; enemies walk at `walkSpeed` in Wander state and sprint at `runSpeed` in Chase state
+- [x] **WallEntity factory** — `game/src/entities/WallEntity.hpp` with `CreateWall()`, `CreateWallRow()`, `CreateWallColumn()` helpers
+- [x] **GameplayScene system order** — SensorSystem → FSMSystem → MovementSystem2D → SolidCollisionSystem → CollisionSystem2D → DamageOnContactSystem
+
+### Phase 8A: AI Framework & Engine Improvements
 
 - [x] **FiniteStateMachine component + FSMSystem** — data-driven state machine with `onEnter`/`onUpdate`/`onExit` callbacks and auto-enter on spawn
 - [x] **GOAPAgent component + GOAPSystem** — goal-oriented action planning; greedy single-action planner picks the highest-priority goal and cheapest valid action

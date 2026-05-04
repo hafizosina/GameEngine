@@ -1,9 +1,9 @@
 # Game Engine Development — Phase Record
 
-> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
-> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `21a30eb` — *feat: replace single enemy speed with distinct walk and run speeds in config and entity logic*  
+> To re-sync: `git log 21a30eb..HEAD --oneline` shows what changed since this doc was written.
 >
-> **Status**: All 8 phases (0–7) complete. This document is a historical record of the build plan.
+> **Status**: Phases 0–8B complete. Phase 8C (Tilemap) in progress.
 > Build system is **SCons** (`SConstruct`), not CMake.
 
 ---
@@ -409,6 +409,83 @@ DELIVERABLE:
 
 ---
 
+## Phase 8A — AI Framework
+```
+GOAL: Data-driven AI that game code can configure per-entity without touching engine/.
+
+TASKS:
+  ✅ FiniteStateMachine component + FSMSystem
+  ✅ GOAPAgent component + GOAPSystem (greedy single-action planner)
+  ✅ UtilityAIAgent component + UtilityAISystem (hysteresis, reselect cooldown)
+  ✅ Target component (entity or world position)
+  ✅ AIBehaviors: SeekTarget, WithinTargetRange, FindNearest<Tag>, Separate<Tag>
+  ✅ DealsDamage component + DamageOnContactSystem
+  ✅ Health.onDied callback
+  ✅ Contacts component + CollisionSystem2D rewrite (polling, zero alloc)
+  ✅ Collider2D.debugColor
+  ✅ Renderer2D letterboxing + GetGameWidth/Height + GetViewportOffset
+  ✅ Window resizable flag
+  ✅ Entity factory headers (PlayerEntity, EnemyEntity, BulletEntity)
+  ✅ AISystem.hpp deleted — replaced by FSM/GOAP/UtilityAI
+
+DONE WHEN:
+  Enemy spawns, enters Idle state, transitions to Chase when player in range,
+  chases player, deals damage on contact. Hysteresis prevents flickering.
+```
+
+---
+
+## Phase 8B — Sensor & Solid Collision
+```
+GOAL: Lightweight in-engine movement resolution (no Box2D for game entities).
+      AI proximity detection via polling sensor component.
+
+TASKS:
+  ✅ SolidObject component (layer + mask bitmask)
+  ✅ SolidCollisionSystem — penetration push-out (Circle-Circle, Circle-Box, Box-Box)
+      dynamic vs static → push dynamic fully
+      dynamic vs dynamic → push each half, adjust velocities
+  ✅ WallCollisionSystem<Tag> — template; resolves movers vs tagged walls
+  ✅ Sensor component (shape/size/offset + hits[32]/hitCount)
+  ✅ SensorSystem — populates Sensor::hits each frame
+  ✅ AIBehaviors extended: Wander(), TagInSensor<Tag>(), FindInSensor<Tag>()
+  ✅ Enemy walk/run speeds — game_config.json enemies.slime.walkSpeed / runSpeed
+  ✅ WallEntity factory helpers
+  ✅ GameplayScene system update order updated
+
+DONE WHEN:
+  Player cannot walk through walls. Enemy wanders when no player in range,
+  runs toward player when player enters sensor, separate from each other.
+```
+
+---
+
+## Phase 8C — Tilemap (In Progress)
+```
+GOAL: Tile-based world with autotile rendering, Z-ordering vs entities,
+      and passability for future pathfinding.
+
+TASKS:
+  ✅ TextureBaker::BakeAutotileSheet() — generic multi-terrain baker
+  ✅ Procedural Value Noise + jagged transition edges
+  ✅ Five terrain sheets baked: grass, sand, water, stone, dirt
+  ✅ Tile asset IDs + assets.json entries
+  ◻ TileTypes.hpp — TileID, TileInfo, passability
+  ◻ TileChunk.hpp — 32×32 grid + dirty flag
+  ◻ TileLayer.hpp — chunk array, tileset, zOrder (0–99)
+  ◻ TileMap.hpp — scene-owned; coordinate API
+  ◻ DualGridAutotiler.hpp — 16-variant bitmask (TL=1,TR=2,BL=4,BR=8)
+  ◻ TilemapRenderSystem.hpp — draws visible chunks; zOrder vs entity layer 50
+  ◻ Scene integration + GameplayScene demo map
+
+DONE WHEN:
+  A tile-based level renders behind entities. Placing tiles auto-updates
+  autotile variants. Overhead tiles draw above entities.
+  Pathfinding can query passability per tile.
+```
+
+---
+
 ## Phase Summary
 
 ```
@@ -422,6 +499,9 @@ PHASE   NAME                  ENDS WITH
   5     Scene & Audio         Scene transitions, music, SFX
   6     UI System             Full menu, widgets, animations
   7     Polish & Game Ready   Ship-ready engine, game stubs ready
+  8A    AI Framework          FSM/GOAP/UtilityAI enemies, damage system
+  8B    Sensor + Collision    Solid push-out, sensor-driven AI detection
+  8C    Tilemap               Autotile world, Z-ordered layer rendering
 ```
 
 ---
@@ -437,6 +517,9 @@ Phase 4  → if it's game logic, it's a component or a system
 Phase 5  → if a scene switch feels janky, fix the transition
 Phase 6  → if a UI element touches a file path, something is wrong
 Phase 7  → if it's a debug tool, it must be stripped in release
+Phase 8A → if it's AI logic, it's a leaf function in AIBehaviors — not in the component
+Phase 8B → if an entity moves, it owns a SolidObject + Collider2D; never block the main thread
+Phase 8C → if a tile exists, it's in a chunk; if a chunk is dirty, it needs a GPU sync
 ```
 
 ---
