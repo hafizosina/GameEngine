@@ -3,7 +3,7 @@
         "width": 1280,
         "height": 720,
         "title": "Zhenzhu Engine - Tested",
-        "fullscreen": false,
+        "fullscreen": true,
         "resizable": true,
         "vsync": true,
         "targetFPS": 60

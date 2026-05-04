@@ -44,6 +44,11 @@
             "action": "debug",
             "keyboard": "F1",
             "gamepad": ""
+        },
+        {
+            "action": "run",
+            "keyboard": "LEFT_SHIFT",
+            "gamepad": "LEFT_THUMB"
         }
     ]
 }
