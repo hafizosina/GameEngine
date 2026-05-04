@@ -760,6 +760,17 @@ Switching is gated by `InputAction("view_player")` / `view_city` / `view_world` 
 
 ---
 
+## Colony Sim Architecture (Hybrid ECS/Tilemap)
+
+For dynamic worlds (digging, building, furniture), the tilemap acts as the **high-speed backbone**, while ECS handles **dynamic state**.
+
+- **Terrain Prototypes (Entities)**: Each `TerrainType` (Log Wall, Stone Floor) is a single "Prototype Entity" in the registry. It stores static components like `MaxHealth`, `Beauty`, and `Tileset`.
+- **The Dense Grid**: Stores only the `TerrainType` ID for O(1) rendering and pathfinding lookups.
+- **Dynamic Promotion**: Most tiles have no unique entity. When a tile is damaged, changed, or assigned a task (e.g., "Dig this wall"), it is "promoted" to a real ECS entity with unique components (like `Health` or `WorkJob`).
+- **Demotion**: Once a tile becomes static again (fully repaired, task finished), the entity is destroyed and the state is baked back into the grid ID to save memory.
+
+---
+
 ## New Directories Created by These Phases
 
 ```
