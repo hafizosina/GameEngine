@@ -3,7 +3,7 @@
 > **Last synced**: commit `21a30eb` — *feat: replace single enemy speed with distinct walk and run speeds in config and entity logic*  
 > To re-sync: `git log 21a30eb..HEAD --oneline` shows what changed since this doc was written.
 
-**Current Status**: 🟡 Phase 8 In Progress (8A + 8B complete, 8C tilemap planned)
+**Current Status**: 🟡 Phase 8 In Progress (8A + 8B + 8C complete, 8D procedural map pending)
 **Build System**: SCons
 **Primary Language**: C++20
 
@@ -23,24 +23,26 @@
 | **Phase 7** | Final Polish & Build | ✅ Complete | 100% |
 | **Phase 8A** | AI Framework (FSM + GOAP + Utility AI) | ✅ Complete | 100% |
 | **Phase 8B** | Sensor + Solid Collision Systems | ✅ Complete | 100% |
-| **Phase 8C** | Tilemap System | 🔄 In Progress | 30% |
+| **Phase 8C** | Tilemap System | ✅ Complete | 100% |
 
 ---
 
 ## ✅ Completed Features
 
-### Phase 8C: Tilemap (In Progress)
+### Phase 8C: Tilemap ✅
 
 - [x] **TextureBaker::BakeAutotileSheet()** — generic bake function for any terrain type via `TerrainStyle{base, light, dark, transition, isLiquid}`; replaces per-terrain bake functions
 - [x] **Procedural noise texturing** — Value Noise with Perlin-like smoothing, jagged transition edges between terrain types
 - [x] **Five terrain types baked** — grass, sand, water (liquid ripples), stone, dirt; 4×4 × 16-variant autotile sheets at `game/assets/textures/tiles/`
 - [x] **Tile asset IDs** — `TEX_TILE_GRASS/SAND/WATER/STONE/DIRT` in `AssetIDs.hpp`; entries in `assets.json`
-- [ ] **TileTypes.hpp** — `TileID`, `TileInfo`, passability flags
-- [ ] **TileChunk.hpp** — 32×32 grid with dirty flag
-- [ ] **TileLayer.hpp** — chunk array, tileset ref, zOrder (0–99)
-- [ ] **TileMap.hpp** — scene-owned, tile coordinate API
-- [ ] **DualGridAutotiler.hpp** — 16-variant bitmask (TL=1,TR=2,BL=4,BR=8)
-- [ ] **TilemapRenderSystem.hpp** — draws visible chunks, respects zOrder vs entity layer (50)
+- [x] **TileTypes.hpp** — `TileID`, `TerrainType`, `TerrainInfo`, `TerrainRegistry`, `ivec2`, chunk helpers
+- [x] **TileChunk.hpp** — `DataChunk` (terrain types), `VisualChunk` (baked TileIDs), `CHUNK_SIZE=32`
+- [x] **TileLayer.hpp** — `dataChunks`, `terrainVisuals` (per-terrain VisualChunk maps), manual `visualChunks`; `SetTerrain`/`GetTerrain`, `SetTile`/`GetTile`
+- [x] **TileMap.hpp** — scene-owned map with `terrainRegistry`; `TileToWorld`, `WorldToTile`, `IsWalkable`, `GetWalkableNeighbors`
+- [x] **DualGridAutotiler.hpp** — priority-based `Bake()` with `MASK_TO_TILE_ID[16]` lookup; handles negative tile coordinates
+- [x] **TilemapRenderSystem.hpp** — camera-frustum-culled render; autotiled path uses `terrainVisuals` per terrain; manual path uses `layer.visualChunks`
+- [x] **GameplayScene integration** — ground layer (z=0) with Dirt/Grass/Water, 100×100 map (-50..50); background/entity/overhead z-split render passes
+- [x] **TerrainIDs.hpp** — `Terrains::DIRT=1, GRASS=2, WATER=3, SAND=4, STONE=5`
 
 ### Phase 8B: Sensor + Solid Collision Systems
 

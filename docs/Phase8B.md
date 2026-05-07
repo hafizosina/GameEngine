@@ -103,18 +103,19 @@ struct VisualChunk {
 };
 
 struct TileLayer {
-    std::string                     name;
-    int                             zOrder      = 0;
-    bool                            walkable    = true;   // false = solid layer
-    bool                            autotiled   = false;  // true = uses DataGrid + autotiler
-    int                             tilesetCols = 4;      // for non-autotiled layers
-    Texture2D                       tileset     = {};     // for non-autotiled layers
+    std::string  name;
+    int          zOrder    = 0;
+    bool         walkable  = true;
+    bool         autotiled = false;
 
-    // Autotiled layers use both grids:
-    std::map<ivec2, DataChunk>      dataChunks;   // terrain type per cell
-    std::map<ivec2, VisualChunk>    visualChunks; // baked sprite IDs (written by autotiler)
+    // AUTOTILED: terrain type per data cell; baked result per-terrain-type
+    std::map<ivec2, DataChunk>                                    dataChunks;
+    std::unordered_map<TerrainType, std::map<ivec2, VisualChunk>> terrainVisuals;
 
-    // Non-autotiled layers use only visualChunks directly (SetTile writes TileID)
+    // NON-AUTOTILED: direct TileID placement (decorations, props)
+    Texture2D                    tileset     = {};
+    int                          tilesetCols = 4;
+    std::map<ivec2, VisualChunk> visualChunks;
 };
 
 struct TileMap {
@@ -271,47 +272,19 @@ DualGridAutotiler::Bake(TileLayer& layer, Rect dirtyRegion);
 ## TilemapRenderSystem
 
 ```cpp
-void TilemapRenderSystem::RenderLayer(TileLayer& layer, Camera2D cam, Renderer2D& r) {
-    Rect view = GetCameraWorldRect(cam);
-    int minTX = WorldToTile(view.x).x,    maxTX = WorldToTile(view.x + view.w).x;
-    int minTY = WorldToTile(view.y).y,    maxTY = WorldToTile(view.y + view.h).y;
+// Public entry point — call twice per frame: once for z<50, once for z>=50
+void TilemapRenderSystem::RenderLayers(TileMap& map, Camera2D cam, Renderer2D& r,
+                                       int gameW, int gameH, int zMin, int zMax);
 
-    int minCX = minTX / CHUNK_SIZE,  maxCX = maxTX / CHUNK_SIZE;
-    int minCY = minTY / CHUNK_SIZE,  maxCY = maxTY / CHUNK_SIZE;
-
-    for (int cx = minCX; cx <= maxCX; cx++) {
-        for (int cy = minCY; cy <= maxCY; cy++) {
-            auto it = layer.visualChunks.find({cx, cy});
-            if (it == layer.visualChunks.end()) continue;
-            RenderVisualChunk(it->second, layer, cx, cy, r);
-        }
-    }
-}
-
-void RenderVisualChunk(VisualChunk& chunk, TileLayer& layer, int cx, int cy, Renderer2D& r) {
-    // Autotiled layers: each TerrainType has its own tileset in TerrainRegistry
-    // Non-autotiled layers: use layer.tileset directly
-    for (int ly = 0; ly < CHUNK_SIZE; ly++) {
-        for (int lx = 0; lx < CHUNK_SIZE; lx++) {
-            TileID id = chunk.tiles[lx][ly];
-            if (id == 0) continue;
-
-            int worldTX = cx * CHUNK_SIZE + lx;
-            int worldTY = cy * CHUNK_SIZE + ly;
-            Vec2 worldPos = TileToWorld(worldTX, worldTY);
-
-            int col = (id - 1) % layer.tilesetCols;
-            int row = (id - 1) / layer.tilesetCols;
-            Rect src = { col * tileSize, row * tileSize, tileSize, tileSize };
-
-            r.DrawSpriteEx(layer.tileset, src, worldPos, {0,0}, 0.f, 1.f);
-        }
-    }
-}
+// Autotiled path — iterates terrainVisuals in priority order, each with its own tileset.
+// Manual path — iterates layer.visualChunks with layer.tileset.
+// Both paths share the same RenderVisualChunks() loop with camera frustum culling:
+//   visible tile range → chunk range → iterate only chunks that exist in the map.
 ```
 
-For autotiled layers, `RenderLayer` runs once per terrain type in priority order,
-binding `TerrainRegistry[t].tileset` before calling `RenderVisualChunk`.
+For autotiled layers, each terrain type's `terrainVisuals[T]` chunk map is rendered
+separately in priority order, so lower-priority terrain draws first (as a base) and
+higher-priority terrain overlays on top with transparent edges handled by bitmask TileID 0.
 
 ---
 
@@ -376,14 +349,14 @@ TiledImporter::Load("map.tmx") → TileMap
 
 ## Implementation Order (Phase 8B)
 
-1. `game/src/dev/TextureBaker.cpp` — **COMPLETED**: 16-variant procedural generator
-2. `engine/tilemap/TileTypes.hpp` — `TileID`, `TerrainType`, `TerrainInfo`, `TerrainRegistry`, `ivec2`
-3. `engine/tilemap/TileChunk.hpp` — `DataChunk`, `VisualChunk`
-4. `engine/tilemap/TileLayer.hpp` — layer with both chunk maps, `SetTerrain`/`GetTerrain`, `SetTile`/`GetTile`
-5. `engine/tilemap/TileMap.hpp`   — scene-owned map, coordinate API, `IsWalkable`
-6. `engine/tilemap/DualGridAutotiler.hpp` — priority-based `Bake()`
-7. `engine/tilemap/TilemapRenderSystem.hpp` — SpriteBatch render per visible chunk
-8. Add z-order render passes to `Scene::Render()` contract
-9. Wire into `GameplayScene` as proof-of-concept
+All steps complete ✅
 
-Then create a new plan.md for the implementation session.
+1. ✅ `game/src/dev/TextureBaker.cpp` — 16-variant procedural placeholder generator
+2. ✅ `engine/tilemap/TileTypes.hpp` — `TileID`, `TerrainType`, `TerrainInfo`, `TerrainRegistry`, `ivec2`
+3. ✅ `engine/tilemap/TileChunk.hpp` — `DataChunk`, `VisualChunk`, `CHUNK_SIZE`
+4. ✅ `engine/tilemap/TileLayer.hpp` — layer with per-terrain `terrainVisuals`, `SetTerrain`/`GetTerrain`, `SetTile`/`GetTile`
+5. ✅ `engine/tilemap/TileMap.hpp`   — scene-owned map, coordinate API, `IsWalkable`, `GetWalkableNeighbors`
+6. ✅ `engine/tilemap/DualGridAutotiler.hpp` — priority-based `Bake()` with `MASK_TO_TILE_ID[16]` lookup
+7. ✅ `engine/tilemap/TilemapRenderSystem.hpp` — camera-culled render per visible chunk
+8. ✅ Z-order render passes in `GameplayScene::Render()` — background (z0-49) → entities → overhead (z50-99)
+9. ✅ Wired into `GameplayScene` — ground layer with Dirt/Grass/Water terrain, 100×100 map (-50..50)
