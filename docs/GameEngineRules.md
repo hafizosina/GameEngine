@@ -1,7 +1,7 @@
 # Zhenzhu Engine — Architectural Rules & Guidelines
 
-> **Last synced**: commit `722aa50` — *feat: implement GameplayScene with player controls, enemy spawning, and bullet pool system*  
-> To re-sync: `git log 722aa50..HEAD --oneline` shows what changed since this doc was written.
+> **Last synced**: commit `e05057d` — *feat: implement SpawnSystem to handle entity spawning requests via SpawnQueue and configurable bullet patterns*  
+> To re-sync: `git log e05057d..HEAD --oneline` shows what changed since this doc was written.
 
 This document contains core architectural rules and best practices for developing and maintaining the Zhenzhu Engine.
 
@@ -82,23 +82,34 @@ The `EventBus` currently uses `std::any` to type-erase event data. While this cr
 
 ## 7. Script Component Scope (Keep Logic in Systems)
 
-**Rule:** The `Script` component lambda is for **entity lifecycle only** — self-destruct timers, one-shot spawning, simple state flags. Game logic belongs in systems.
+**Rule:** The `Script` component lambda is for **input reading and simple state flags only**. Game logic belongs in systems. Timed destruction belongs in `TimerComponent`.
 
-**Why:** If complex behaviour migrates into Script lambdas (pathfinding, combat decisions, resource gathering), the ECS loses its ability to batch-process and the code becomes untestable closures scattered across entity creation sites.
+**Why:** If complex behaviour migrates into Script lambdas (pathfinding, combat decisions, resource gathering), the ECS loses its ability to batch-process and the code becomes untestable closures scattered across entity creation sites. If lifetime logic lives in Script, `TimerSystem`'s repeat and callback infrastructure goes unused.
 
 **✅ Correct Script usage:**
 ```cpp
-// Bullet auto-destroy after lifetime
-float lifetime = 2.f;
-reg.Emplace<Script>(bullet, Script{
-    [lifetime](entt::registry& raw, Entity self, float dt) mutable {
-        lifetime -= dt;
-        if (lifetime <= 0.f) raw.destroy(self);
+// Reading input, setting velocity, pushing to SpawnQueue
+reg.Emplace<Script>(player, Script{
+    [](entt::registry& raw, Entity self, float dt) {
+        auto& vel = raw.get<Velocity2D>(self);
+        // ... read InputManager, set vel.linear ...
+    }
+});
+```
+
+**✅ Timed destruction — use TimerComponent, not Script:**
+```cpp
+reg.Emplace<TimerComponent>(bullet, TimerComponent{
+    .timeLeft  = 2.f,
+    .onTimeout = [](entt::registry& r, entt::entity e) {
+        if (r.valid(e)) r.destroy(e);
     }
 });
 ```
 
 **❌ Never in Script:**
+- Timed self-destruction (use `TimerComponent`)
+- Spawn requests that bypass `SpawnQueue` (push to `SpawnQueue` instead)
 - Pathfinding or steering
 - Combat decisions or targeting
 - Resource gathering logic
@@ -106,7 +117,7 @@ reg.Emplace<Script>(bullet, Script{
 
 Complex AI goes into dedicated engine components: **`UtilityAI`** (scored action selection) or **`FiniteStateMachine`** (state + transition table) — both as new components in `engine/ecs/components/`, with corresponding systems. Do not implement these in Script lambdas.
 
-**✅ Complex AI goes into:** `engine/ecs/components/FiniteStateMachine.hpp` (phase 8A, implemented) — `UtilityAI`, `BehaviorTree`, `GOAP` (planned phases 9A–9C).  
+**✅ Complex AI goes into:** `engine/ecs/components/FiniteStateMachine.hpp` (implemented) — `UtilityAI`, `GOAP` also available.  
 `engine/ecs/systems/FSMSystem.hpp` evaluates all FSM components once per frame.
 
 ---
@@ -181,4 +192,55 @@ EventBus::Publish(LevelCompleteEvent{ 3, 1500 });
 
 // subscribe in OnEnter
 EventBus::Subscribe<LevelCompleteEvent>([](const LevelCompleteEvent& e) { ... });
+```
+
+---
+
+## 12. Entity-Spawning-Entity Uses SpawnQueue + SpawnSystem
+
+**Rule:** Never create a spawn-specific component per use case (`ShootIntent`, `BirthIntent`, `TakeoutItemIntent`). Use `SpawnQueue` (engine layer) with integer `typeId` constants (game layer). Register handlers in `OnEnter`.
+
+**Reason:**
+A game with multiple entity types that can spawn other entities would require one component per spawn type. `SpawnQueue.typeId` acts as a universal discriminator — a single component, handler-dispatched at runtime. Adding a new spawn type is zero-engine-change: one constant, one `Register()` call, one factory function.
+
+**✅ Correct:**
+```cpp
+// SpawnTypes.hpp (game layer) — integer constants only
+namespace Zhenzhu::SpawnTypes {
+    constexpr int BULLET       = 1;
+    constexpr int ANIMAL_BIRTH = 2;
+    constexpr int ITEM_DROP    = 3;
+}
+
+// OnEnter — register each type handler once
+m_SpawnSystem.Register(SpawnTypes::BULLET,
+    [this, rm](Registry& reg, entt::entity, Vec2 origin, Vec2 dir) {
+        CreateBullet(reg, rm, m_PoolManager, origin, dir);
+    });
+
+// Entity creation — set typeId once
+SpawnQueue& sq = reg.Emplace<SpawnQueue>(player);
+sq.typeId = SpawnTypes::BULLET;
+
+// Script — push per-frame entries (e.g. shotgun = multiple pushes)
+q.Push(origin, direction);
+```
+
+**❌ Do NOT:**
+- Define `ShootIntent`, `BirthIntent`, or other per-spawn-type components
+- Acquire from an `ObjectPool` directly in scene `Update()` or in Script lambdas
+- Let components hold `ObjectPool<T>*` pointers — pool references belong in handler lambdas
+
+**Pool ownership rule:** `PoolManager m_PoolManager` lives in the scene. Handler lambdas
+capture `this`. The only pool pointer on an entity is `PooledBullet` (or equivalent), stored
+on the *spawned* entity for self-contained cleanup — never on the spawner.
+
+```cpp
+// Self-contained cleanup — reads back-reference from the entity itself
+auto cleanup = [](entt::registry& r, entt::entity e) {
+    if (!r.valid(e)) return;   // double-fire guard
+    auto& pb = r.get<PooledBullet>(e);
+    pb.pool->Release(pb.object);
+    r.destroy(e);
+};
 ```
