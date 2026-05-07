@@ -1,9 +1,14 @@
 {
     "player": {
         "speed": 250.0,
+        "runSpeed": 450.0,
         "jumpForce": 400.0,
         "health": 100,
-        "damage": 30
+        "damage": 30,
+        "shotgun": {
+            "pellets": 3,
+            "spread": 1
+        }
     },
     "enemies": {
         "slime": {
@@ -34,7 +39,7 @@
     "gameplay": {
         "maxEnemies": 50,
         "enemySpawnInterval": 1.0,
-        "bulletPoolSize": 30
+        "bulletPoolSize": 60
     },
     "game": {
         "winScore": 10

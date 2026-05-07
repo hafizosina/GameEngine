@@ -12,15 +12,12 @@
 #include "resources/ResourceManager.hpp"
 #include "data/DataManager.hpp"
 #include "core/ServiceLocator.hpp"
-#include "assets/AssetIDs.hpp"
 #include "pool/ObjectPool.hpp"
+#include "pool/PoolManager.hpp"
 #include "pool/Poolable.hpp"
-#include <vector>
-#include <algorithm>
+#include "assets/AssetIDs.hpp"
 
 namespace Zhenzhu {
-
-// BulletData removed in favor of engine/ecs/components/TimerComponent.hpp
 
 class Bullet : public Poolable {
 public:
@@ -29,45 +26,46 @@ public:
     void OnRelease() override {}
 };
 
+// Stored on the bullet entity so cleanup callbacks are self-contained.
+struct PooledBullet {
+    ObjectPool<Bullet>* pool;
+    Bullet*             object;
+};
+
 inline Bullet* CreateBullet(Registry& reg, ResourceManager* rm,
-                             ObjectPool<Bullet>& pool,
-                             std::vector<Bullet*>& activeBullets,
-                             Vec2 pos, Vec2 dir)
+                             PoolManager& pm, Vec2 pos, Vec2 dir)
 {
     auto* dm      = ServiceLocator::Get<DataManager>();
     float speed   = dm->gameConfig.GetFloat("bullet.speed",    500.f);
     float lifetime = dm->gameConfig.GetFloat("bullet.lifetime",  1.5f);
     int   damage  = dm->gameConfig.GetInt  ("bullet.damage",     10);
 
-    Bullet* obj  = pool.Acquire();
-    obj->entity  = reg.CreateEntity();
+    auto* pool  = pm.Get<Bullet>("bullets");
+    Bullet* obj = pool->Acquire();
+    obj->entity = reg.CreateEntity();
 
+    reg.Emplace<PooledBullet>(obj->entity, PooledBullet{pool, obj});
     reg.Emplace<Transform2D>(obj->entity, pos);
     reg.Emplace<Velocity2D>(obj->entity, dir * speed);
     reg.Emplace<IsBullet>(obj->entity);
     reg.Emplace<IsTrigger>(obj->entity);
     reg.Emplace<DealsDamage>(obj->entity, DealsDamage{damage});
 
-    // Handle bullet destruction and pooling
-    auto releaseBullet = [&pool, &activeBullets, obj](entt::registry& r, entt::entity e) {
-        // Find and remove from active list
-        auto it = std::find(activeBullets.begin(), activeBullets.end(), obj);
-        if (it != activeBullets.end()) {
-            activeBullets.erase(it);
-        }
-        
-        pool.Release(obj);
-        if (r.valid(e)) r.destroy(e);
+    auto cleanup = [](entt::registry& r, entt::entity e) {
+        if (!r.valid(e)) return;
+        auto& pb = r.get<PooledBullet>(e);
+        pb.pool->Release(pb.object);
+        r.destroy(e);
     };
 
     reg.Emplace<TimerComponent>(obj->entity, TimerComponent{
-        .timeLeft = lifetime,
-        .onTimeout = releaseBullet
+        .timeLeft  = lifetime,
+        .onTimeout = cleanup
     });
 
     Health& hp = reg.Emplace<Health>(obj->entity, Health{1, 1, {}});
-    hp.onDied  = [releaseBullet](entt::entity e, Registry& r) {
-        releaseBullet(r.Raw(), e);
+    hp.onDied  = [cleanup](entt::entity e, Registry& r) {
+        cleanup(r.Raw(), e);
     };
 
     Sprite& spr = reg.Emplace<Sprite>(obj->entity, rm->LoadTexture(Assets::TEX_BULLET));
@@ -79,7 +77,6 @@ inline Bullet* CreateBullet(Registry& reg, ResourceManager* rm,
     });
     reg.Emplace<SolidObject>(obj->entity);
 
-    activeBullets.push_back(obj);
     return obj;
 }
 

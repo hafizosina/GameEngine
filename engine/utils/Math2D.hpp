@@ -74,6 +74,12 @@ namespace Math2D {
         return p.x >= r.x && p.x <= r.x + r.w &&
                p.y >= r.y && p.y <= r.y + r.h;
     }
+
+    inline Vec2 Rotate(Vec2 v, float radians) {
+        float c = std::cos(radians);
+        float s = std::sin(radians);
+        return { v.x * c - v.y * s, v.x * s + v.y * c };
+    }
 }
 
 } // namespace Zhenzhu

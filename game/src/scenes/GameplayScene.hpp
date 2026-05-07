@@ -8,15 +8,15 @@
 #include "ecs/systems/ScriptSystem.hpp"
 #include "ecs/systems/SensorSystem.hpp"
 #include "ecs/systems/SolidCollisionSystem.hpp"
+#include "ecs/systems/SpawnSystem.hpp"
 #include "ecs/systems/TimerSystem.hpp"
+#include "pool/PoolManager.hpp"
 #include "entities/PlayerEntity.hpp"
 #include "entities/EnemyEntity.hpp"
-#include "entities/BulletEntity.hpp"
 #include "entities/WallEntity.hpp"
 #include "renderer/Camera2D.hpp"
 #include "tilemap/TileMap.hpp"
 #include "tilemap/TilemapRenderSystem.hpp"
-#include <vector>
 
 namespace Zhenzhu {
 
@@ -31,7 +31,6 @@ private:
     void SetupTilemap();
     void SpawnWalls();
     void SpawnEnemy();
-    void SpawnBullet(Vec2 pos, Vec2 dir);
 
     RenderSystem2D                  m_RenderSystem;
     MovementSystem2D                m_MovementSystem;
@@ -41,13 +40,12 @@ private:
     DamageOnContactSystem           m_DamageSystem;
     FSMSystem                       m_FSMSystem;
     ScriptSystem                    m_ScriptSystem;
+    SpawnSystem                     m_SpawnSystem;
     TimerSystem                     m_TimerSystem;
+    PoolManager                     m_PoolManager;
     Camera2D                        m_Camera;
     TileMap                         m_TileMap;
     TilemapRenderSystem             m_TilemapRenderSystem;
-
-    ObjectPool<Bullet>   m_BulletPool;
-    std::vector<Bullet*> m_ActiveBullets;
 
     float        m_EnemySpawnTimer    = 0.f;
     float        m_EnemySpawnInterval = 1.f;

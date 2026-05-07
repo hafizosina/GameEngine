@@ -13,7 +13,9 @@
 #include "resources/ResourceManager.hpp"
 #include "data/DataManager.hpp"
 #include "core/ServiceLocator.hpp"
+#include "ecs/components/SpawnQueue.hpp"
 #include "assets/AssetIDs.hpp"
+#include "assets/SpawnTypes.hpp"
 #include "utils/Logger.hpp"
 
 namespace Zhenzhu {
@@ -29,13 +31,6 @@ struct AimPosition {
     Vec2 world = {};
 };
 
-// Script sets fire=true + origin/dir when shoot button pressed.
-// Scene reads it each frame to spawn the bullet, then clears fire.
-struct ShootIntent {
-    bool fire = false;
-    Vec2 origin = {};
-    Vec2 direction = {};
-};
 
 inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
 {
@@ -53,7 +48,8 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
     reg.Emplace<IsPlayer>(e);
     reg.Emplace<DealsDamage>(e, DealsDamage{damage});
     reg.Emplace<AimPosition>(e);
-    reg.Emplace<ShootIntent>(e);
+    SpawnQueue& sq = reg.Emplace<SpawnQueue>(e);
+    sq.typeId = SpawnTypes::BULLET;
 
     Health& hp = reg.Emplace<Health>(e, Health{health, health, {}});
     hp.onDied = [health](entt::entity ent, Registry& r) {
@@ -92,16 +88,24 @@ inline Entity CreatePlayer(Registry& reg, ResourceManager* rm)
             float factor = (moveDir.Length() > 0) ? currentSpeed * 0.04f : currentSpeed * 0.09f;
             vel.linear = Math2D::LerpV(vel.linear, targetVel, factor * dt);
 
-            // Shooting — write intent, scene handles spawning
-            auto& intent = r.get<ShootIntent>(self);
-            intent.fire = false;
+            // Request spawn — SpawnSystem dispatches to registered handler
             if (input->GetMouse().IsButtonPressed(MOUSE_BUTTON_LEFT) || input->GetAction("jump")->IsPressed()) {
+                auto* dm2   = ServiceLocator::Get<DataManager>();
+                int   pellets = dm2->gameConfig.GetInt  ("player.shotgun.pellets", 5);
+                float spread  = dm2->gameConfig.GetFloat("player.shotgun.spread",  0.3f);
+
                 auto& trans = r.get<Transform2D>(self);
-                auto& aim = r.get<AimPosition>(self);
-                Vec2 dir = (aim.world - trans.position).Normalize();
-                intent.fire = true;
-                intent.origin = trans.position + dir * 36.f;
-                intent.direction = dir;
+                auto& aim   = r.get<AimPosition>(self);
+                Vec2  dir   = (aim.world - trans.position).Normalize();
+                auto& q     = r.get<SpawnQueue>(self);
+
+                for (int i = 0; i < pellets; ++i) {
+                    float angle = (pellets > 1)
+                        ? -spread * 0.5f + spread * (i / float(pellets - 1))
+                        : 0.f;
+                    Vec2 spreadDir = Math2D::Rotate(dir, angle);
+                    q.Push(trans.position + spreadDir * 36.f, spreadDir);
+                }
             }
         }});
 

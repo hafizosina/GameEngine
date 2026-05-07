@@ -1,4 +1,6 @@
 #include "scenes/GameplayScene.hpp"
+#include "entities/BulletEntity.hpp"
+#include "assets/SpawnTypes.hpp"
 #include "core/ServiceLocator.hpp"
 #include "renderer/Renderer2D.hpp"
 #include "renderer/DebugDraw2D.hpp"
@@ -14,6 +16,7 @@
 #include "assets/TerrainIDs.hpp"
 #include <random>
 #include <cmath>
+#include <vector>
 
 namespace Zhenzhu {
 
@@ -28,7 +31,13 @@ void GameplayScene::OnEnter()
     int poolSize = dm->gameConfig.GetInt("gameplay.bulletPoolSize", 30);
 
     m_Player = CreatePlayer(m_Registry, rm);
-    m_BulletPool.PreWarm(poolSize);
+
+    m_PoolManager.Register<Bullet>("bullets", poolSize);
+    m_SpawnSystem.Register(SpawnTypes::BULLET,
+        [this, rm](Registry& reg, entt::entity, Vec2 origin, Vec2 direction) {
+            CreateBullet(reg, rm, m_PoolManager, origin, direction);
+        });
+
     SetupTilemap();
     SpawnWalls();
 
@@ -42,7 +51,10 @@ void GameplayScene::OnEnter()
 void GameplayScene::OnExit()
 {
     LOG_INFO("Exiting GameplayScene");
-    m_BulletPool.ReleaseAll();
+    std::vector<entt::entity> toDestroy;
+    for (auto e : m_Registry.View<IsBullet>()) toDestroy.push_back(e);
+    for (auto e : toDestroy) if (m_Registry.IsValid(e)) m_Registry.Destroy(e);
+    m_PoolManager.Clear();
 }
 
 void GameplayScene::Update(float dt)
@@ -71,19 +83,14 @@ void GameplayScene::Update(float dt)
     m_TimerSystem.Update(m_Registry, dt);
 
     // 5. Systems
-    m_ScriptSystem.Update(m_Registry, dt);  // player input → velocity
+    m_ScriptSystem.Update(m_Registry, dt);  // player input → sets SpawnRequest
+    m_SpawnSystem.Update(m_Registry);       // dispatches pending spawn requests
     m_SensorSystem.Update(m_Registry);      // populate sensor hits first
     m_FSMSystem.Update(m_Registry, dt);     // AI reads sensor, decides velocity
     m_MovementSystem.Update(m_Registry, dt);
-    m_SolidCollision.Update(m_Registry);  // resolve all solid-vs-solid overlaps
+    m_SolidCollision.Update(m_Registry);
     m_CollisionSystem.Update(m_Registry);
     m_DamageSystem.Update(m_Registry);
-
-    // Spawn bullet if player script requested it
-    if (m_Registry.IsValid(m_Player)) {
-        auto& intent = m_Registry.Get<ShootIntent>(m_Player);
-        if (intent.fire) SpawnBullet(intent.origin, intent.direction);
-    }
 }
 
 void GameplayScene::Render()
@@ -165,12 +172,6 @@ void GameplayScene::SpawnEnemy()
 
     auto* rm = ServiceLocator::Get<ResourceManager>();
     CreateEnemy(m_Registry, rm, spawnPos);
-}
-
-void GameplayScene::SpawnBullet(Vec2 pos, Vec2 dir)
-{
-    auto* rm = ServiceLocator::Get<ResourceManager>();
-    CreateBullet(m_Registry, rm, m_BulletPool, m_ActiveBullets, pos, dir);
 }
 
 void GameplayScene::SetupTilemap()
