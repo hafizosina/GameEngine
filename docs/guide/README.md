@@ -25,6 +25,8 @@ Everything in `game/src/` is yours. The engine layer in `engine/` is read-only.
 | [physics.md](physics.md) | Box2D bodies, SolidObject/Collider2D, Sensor |
 | [events.md](events.md) | EventBus, custom events, async loading, object pooling |
 | [debug.md](debug.md) | F1-F5 overlays, FrameProfiler, DebugDraw2D |
+| [tilemap.md](tilemap.md) | Tilemap layers, terrain registration, autotiling, rendering, tile promotion (hybrid ECS) |
+| [utils.md](utils.md) | Math2D (Vec2, Rect, all functions), UUID generation, Serializer (JSON read/write) |
 
 ---
 
@@ -49,6 +51,12 @@ Everything in `game/src/` is yours. The engine layer in `engine/` is read-only.
 | Detect enemies in a radius | [physics.md](physics.md) — Sensor |
 | Load a texture without blocking | [events.md](events.md) — Async loading |
 | Draw debug collider overlays | [debug.md](debug.md) |
+| Set up a tilemap with terrain blending | [tilemap.md](tilemap.md) |
+| Make a tile destructible / interactive | [tilemap.md](tilemap.md) — Tile Promotion |
+| Check if a tile blocks movement | [tilemap.md](tilemap.md) — Walkability |
+| Lerp / rotate / random / distance math | [utils.md](utils.md) — Math2D |
+| Generate a unique runtime ID | [utils.md](utils.md) — UUID |
+| Read / write a custom JSON file | [utils.md](utils.md) — Serializer |
 
 ---
 

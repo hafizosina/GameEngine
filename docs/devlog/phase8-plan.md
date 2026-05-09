@@ -760,6 +760,18 @@ Switching is gated by `InputAction("view_player")` / `view_city` / `view_world` 
 
 ---
 
+## Post-Phase Checklist
+
+After completing **any** phase or sub-phase, always do these before moving on:
+
+- [ ] Update `CLAUDE.md` — mark the phase complete, list all new files under "What is implemented"
+- [ ] Update `docs/guide/` — add or extend the relevant guide (`ecs.md`, `ai.md`, `tilemap.md`, etc.) with new components, systems, and usage examples
+- [ ] Update `docs/guide/README.md` — add new guide entries and quick recipe rows if needed
+- [ ] Update `docs/devlog/phase-tasks.md` — mark tasks done
+- [ ] Run `scons` → zero warnings before calling it complete
+
+---
+
 ## Colony Sim Architecture (Hybrid ECS/Tilemap)
 
 For dynamic worlds (digging, building, furniture), the tilemap acts as the **high-speed backbone**, while ECS handles **dynamic state**.

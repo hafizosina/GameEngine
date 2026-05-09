@@ -72,20 +72,24 @@ The autotiler **reads** `TerrainType` from the DataGrid and **writes** `TileID` 
 constexpr int CHUNK_SIZE = 32;
 
 struct ivec2 {
-    int x, y;
-    bool operator<(const ivec2& o) const {
-        return x < o.x || (x == o.x && y < o.y);
-    }
+    int x = 0, y = 0;
+    bool operator<(const ivec2& o)  const { return x < o.x || (x == o.x && y < o.y); }
+    bool operator==(const ivec2& o) const { return x == o.x && y == o.y; }
 };
+
+// Chunk coordinate helpers — correct for all signed tile coordinates.
+inline int ChunkCoord(int tile, int chunkSize);   // e.g. tile -1 → chunk -1
+inline int LocalCoord(int tile, int chunkSize);   // local index within that chunk
 
 // Per-terrain-type properties — indexed by TerrainType
 struct TerrainInfo {
-    bool     passable = true;
-    int      priority = 0;       // autotiler z-order: higher renders on top of lower
-    Texture2D tileset = {};      // 4x4 = 16-variant sheet for this terrain
+    bool      passable    = true;
+    int       priority    = 0;       // autotiler z-order: higher renders on top of lower
+    Texture2D tileset     = {};      // 4×4 = 16-variant sheet for this terrain
+    int       tilesetCols = 4;
     // future: friction, damage, sound
 };
-std::unordered_map<TerrainType, TerrainInfo> TerrainRegistry;
+using TerrainRegistry = std::unordered_map<TerrainType, TerrainInfo>;
 
 // Chunk of the DataGrid — stores terrain types placed by the editor/game
 struct DataChunk {
@@ -95,11 +99,10 @@ struct DataChunk {
 
 // Chunk of the VisualGrid — stores baked sprite frame IDs, ready to render
 // VisualGrid is offset by (0.5, 0.5) tiles relative to DataGrid
-// Size is (DataGrid + 1) because each visual cell sits at a DataGrid corner
 struct VisualChunk {
     TileID tiles[CHUNK_SIZE][CHUNK_SIZE] = {};
-    bool   dirty = true;
-    Texture2D indexTex = {};    // 32x32 R16 — for future GPU shader path
+    bool   dirty = true;   // needs GPU re-upload (used by future shader path)
+    // Texture2D indexTex reserved for GPU shader path (not yet allocated)
 };
 
 struct TileLayer {
@@ -119,8 +122,9 @@ struct TileLayer {
 };
 
 struct TileMap {
-    std::vector<TileLayer>  layers;
-    int                     tileSize = 16;   // pixels per tile
+    std::vector<TileLayer> layers;
+    int                    tileSize = 32;   // pixels per tile in world space
+    TerrainRegistry        terrainRegistry;
     // NOT a component — owned by the scene
 };
 ```
@@ -130,41 +134,20 @@ struct TileMap {
 ## Chunk Access
 
 ```cpp
+// All accessors use ChunkCoord()/LocalCoord() helpers — NOT raw / and %,
+// which give wrong results for negative tile coordinates.
+
 // --- DataGrid access (autotiled layers) ---
 
-DataChunk& GetDataChunk(TileLayer& layer, int tileX, int tileY) {
-    ivec2 coord = { tileX / CHUNK_SIZE, tileY / CHUNK_SIZE };
-    return layer.dataChunks[coord];
-}
+TerrainType GetTerrain(const TileLayer& layer, int tileX, int tileY);
+void        SetTerrain(TileLayer& layer, int tileX, int tileY, TerrainType t);
+// SetTerrain marks the containing DataChunk dirty = true.
 
-TerrainType GetTerrain(TileLayer& layer, int tileX, int tileY) {
-    auto& chunk = GetDataChunk(layer, tileX, tileY);
-    return chunk.terrain[tileX % CHUNK_SIZE][tileY % CHUNK_SIZE];
-}
+// --- VisualGrid access (non-autotiled layers) ---
 
-void SetTerrain(TileLayer& layer, int tileX, int tileY, TerrainType t) {
-    auto& chunk = GetDataChunk(layer, tileX, tileY);
-    chunk.terrain[tileX % CHUNK_SIZE][tileY % CHUNK_SIZE] = t;
-    chunk.dirty = true;
-}
-
-// --- VisualGrid access (both autotiled and manual layers) ---
-
-VisualChunk& GetVisualChunk(TileLayer& layer, int tileX, int tileY) {
-    ivec2 coord = { tileX / CHUNK_SIZE, tileY / CHUNK_SIZE };
-    return layer.visualChunks[coord];
-}
-
-TileID GetTile(TileLayer& layer, int tileX, int tileY) {
-    auto& chunk = GetVisualChunk(layer, tileX, tileY);
-    return chunk.tiles[tileX % CHUNK_SIZE][tileY % CHUNK_SIZE];
-}
-
-void SetTile(TileLayer& layer, int tileX, int tileY, TileID id) {
-    auto& chunk = GetVisualChunk(layer, tileX, tileY);
-    chunk.tiles[tileX % CHUNK_SIZE][tileY % CHUNK_SIZE] = id;
-    chunk.dirty = true;
-}
+TileID GetTile(const TileLayer& layer, int tileX, int tileY);
+void   SetTile(TileLayer& layer, int tileX, int tileY, TileID id);
+// SetTile marks the containing VisualChunk dirty = true.
 ```
 
 ---
@@ -172,10 +155,9 @@ void SetTile(TileLayer& layer, int tileX, int tileY, TileID id) {
 ## World ↔ Tile Coordinate API
 
 ```cpp
-// TileMap helpers
+// TileToWorld returns the top-left corner of the tile in world space.
 Vec2  TileToWorld(int tileX, int tileY) const {
-    return { tileX * tileSize + tileSize * 0.5f,
-             tileY * tileSize + tileSize * 0.5f };
+    return { tileX * (float)tileSize, tileY * (float)tileSize };
 }
 
 ivec2 WorldToTile(Vec2 worldPos) const {
@@ -184,22 +166,22 @@ ivec2 WorldToTile(Vec2 worldPos) const {
 }
 
 bool IsWalkable(int tileX, int tileY) const {
-    for (auto& layer : layers) {
-        if (layer.walkable) continue;              // walkable layers never block
+    for (const auto& layer : layers) {
+        if (layer.walkable) continue;   // walkable layers never block
         if (layer.autotiled) {
             TerrainType t = GetTerrain(layer, tileX, tileY);
-            if (t == 0) continue;                  // empty cell
-            auto it = TerrainRegistry.find(t);
-            if (it != TerrainRegistry.end() && !it->second.passable) return false;
+            if (t == 0) continue;
+            auto it = terrainRegistry.find(t);
+            if (it != terrainRegistry.end() && !it->second.passable) return false;
         } else {
-            TileID id = GetTile(layer, tileX, tileY);
-            if (id == 0) continue;
-            // non-autotiled solid layers block unconditionally
-            return false;
+            if (GetTile(layer, tileX, tileY) != 0) return false;
         }
     }
     return true;
 }
+
+std::vector<ivec2> GetWalkableNeighbors(int tileX, int tileY) const;
+// 4-directional. Used by A* in Phase 9.
 ```
 
 ---
@@ -262,9 +244,9 @@ Bitmask 15 = all corners match = frame 15 = fully filled tile.
 
 ```cpp
 // Call after any SetTerrain() edit:
-DualGridAutotiler::Bake(TileLayer& layer, Rect dirtyRegion);
-// dirtyRegion is in DataGrid tile coords
-// writes into layer.visualChunks
+DualGridAutotiler::Bake(TileLayer& layer, const TerrainRegistry& registry, Rect dirtyTileRect);
+// dirtyTileRect is in DataGrid tile coords {x, y, width, height}
+// writes into layer.terrainVisuals[T] per terrain type
 ```
 
 ---
